@@ -1,0 +1,33 @@
+<!doctype html>
+<title>{{ debate.title }}</title>
+<h2>{{ debate.title }} ({{ debate.style }})</h2>
+{% if voting_open %}
+  <form method="post">
+    <ul>
+      {% for topic in topics %}
+        <li>
+          {{ topic.text }}<br>
+          Votes: {{ vote_counts[topic.id] }}
+          {% if topic.id in user_votes %}
+            <strong>— You voted</strong>
+          {% elif votes_left > 0 %}
+            <button name="topic_id" value="{{ topic.id }}">Vote</button>
+          {% endif %}
+        </li>
+      {% endfor %}
+    </ul>
+    <p>You have {{ votes_left }} votes left for this debate.</p>
+  </form>
+{% else %}
+  <ul>
+    {% for topic in topics %}
+      <li>
+        {{ topic.text }} — Votes: {{ vote_counts[topic.id] }}
+        {% if topic == winner %}
+          <strong>Winner!</strong>
+        {% endif %}
+      </li>
+    {% endfor %}
+  </ul>
+  <a href="{{ url_for('main.dashboard') }}">Back to dashboard</a>
+{% endif %}
