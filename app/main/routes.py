@@ -3,7 +3,7 @@ from flask_login import login_required, current_user
 from app.models import Debate, Topic, Vote
 from app.extensions import db
 
-main_bp = Blueprint('main', __name__)
+from . import main_bp 
 
 @main_bp.route('/')
 @login_required

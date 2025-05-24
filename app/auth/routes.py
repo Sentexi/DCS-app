@@ -5,7 +5,7 @@ from flask_login import login_user, logout_user, login_required, current_user
 from app.extensions import db, login_manager
 from app.models import User
 
-auth_bp = Blueprint('auth', __name__)
+from . import auth_bp 
 
 # For Flask-Login: user loader
 @login_manager.user_loader

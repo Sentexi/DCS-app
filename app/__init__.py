@@ -26,5 +26,7 @@ def create_app(config_file=None):
     app.register_blueprint(main_bp)
     app.register_blueprint(admin_bp)
     app.register_blueprint(debate_bp)
+    
+    print(app.url_map)
 
     return app
