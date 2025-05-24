@@ -3,14 +3,18 @@ from flask_login import login_required, current_user
 from app.models import Debate, Topic, Vote
 from app.extensions import db
 
+
 from . import main_bp 
 
 @main_bp.route('/')
 @login_required
 def dashboard():
+    if not current_user.date_joined_choice:
+        return redirect(url_for('auth.survey'))
     # Show all debates (future: filter to only "active" debates)
     debates = Debate.query.all()
     return render_template('main/dashboard.html', debates=debates)
+
 
 @main_bp.route('/debate/<int:debate_id>', methods=['GET', 'POST'])
 @login_required
