@@ -45,6 +45,7 @@ class User(UserMixin, db.Model):
 
     # Relationship: which votes has this user cast?
     votes = db.relationship('Vote', back_populates='user', cascade='all, delete-orphan')
+    slots = db.relationship('SpeakerSlot', backref='user', lazy='dynamic')
 
     def __repr__(self):
         return f'<User {self.username}>'
@@ -58,6 +59,7 @@ class Debate(db.Model):
 
     # Relationship: which topics belong to this debate?
     topics = db.relationship('Topic', back_populates='debate', cascade='all, delete-orphan')
+    slots = db.relationship('SpeakerSlot', backref='debate', lazy='dynamic')
 
     def __repr__(self):
         return f'<Debate {self.title} ({self.style})>'
@@ -110,3 +112,12 @@ JUDGE_SKILL = {
 def apply_skills(user):
     user.debate_skill = JOIN_SKILL.get(user.date_joined_choice, 'First Timer')
     user.judge_skill = JUDGE_SKILL.get(user.judge_choice, 'Cant judge')
+    
+class SpeakerSlot(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    debate_id = db.Column(db.Integer, db.ForeignKey('debate.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    role = db.Column(db.String(32), nullable=False)    # e.g. "Gov-1", "Judge-Chair"
+    room = db.Column(db.Integer, default=1)            # For split debates (1 or 2)
+    # Ensure each user is only assigned once per debate per room
+    __table_args__ = (db.UniqueConstraint('debate_id', 'user_id', 'room', name='_debate_user_room_uc'),)
