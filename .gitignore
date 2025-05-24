@@ -1,0 +1,29 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*.so
+
+# C extensions
+*.pyd
+
+# Distribution / packaging
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Flask stuff:
+instance/
+*.db
+
+# Pytest
+.pytest_cache/
+
+# VS Code and IDE stuff:
+.vscode/
+.idea/
+
+# MacOS
+.DS_Store
