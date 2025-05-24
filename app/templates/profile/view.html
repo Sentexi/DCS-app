@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Profile{% endblock %}
+{% block content %}
+<h2>Profile</h2>
+<form method="post" class="mb-3">
+  <div class="mb-3">
+    <label class="form-label">Username</label>
+    <input name="username" class="form-control" value="{{ current_user.username }}">
+  </div>
+  <div class="mb-3">
+    <label class="form-label">Email</label>
+    <input name="email" class="form-control" value="{{ current_user.email }}">
+  </div>
+  <button type="submit" class="btn btn-primary">Update</button>
+</form>
+<hr>
+<p><strong>Debate Skill:</strong> {{ current_user.debate_skill or '—' }}</p>
+<p><strong>Judge Skill:</strong> {{ current_user.judge_skill or '—' }}</p>
+<p><strong>Debates Participated:</strong> {{ current_user.debate_count or 0 }}</p>
+{% endblock %}
