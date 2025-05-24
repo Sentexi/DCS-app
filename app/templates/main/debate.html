@@ -3,34 +3,35 @@
 
 {% block content %}
 <h2>{{ debate.title }} ({{ debate.style }})</h2>
-{% if voting_open %}
+
+{% if debate.voting_open %}
   <form method="post">
     <ul>
-      {% for topic in topics %}
+      {% for topic in debate.topics %}
         <li>
-          {{ topic.text }}<br>
-          Votes: {{ vote_counts[topic.id] }}
+          {{ topic.text }}
           {% if topic.id in user_votes %}
             <strong>— You voted</strong>
           {% elif votes_left > 0 %}
-            <button name="topic_id" value="{{ topic.id }}">Vote</button>
+            <button name="topic_id" value="{{ topic.id }}" class="btn btn-primary btn-sm">Vote</button>
           {% endif %}
         </li>
       {% endfor %}
     </ul>
-    <p>You have {{ votes_left }} votes left for this debate.</p>
+    <p>You have {{ votes_left }} vote{{ 's' if votes_left != 1 else '' }} left for this debate.</p>
   </form>
 {% else %}
+  <h4 class="mt-4">Results</h4>
   <ul>
-    {% for topic in topics %}
+    {% for topic in debate.topics %}
       <li>
-        {{ topic.text }} — Votes: {{ vote_counts[topic.id] }}
-        {% if topic == winner %}
-          <strong>Winner!</strong>
+        {{ topic.text }} — <strong>{{ topic.votes|length }} vote{{ '' if topic.votes|length == 1 else 's' }}</strong>
+        {% if topic.votes|length == debate.topics | map(attribute='votes') | map('length') | max %}
+          <span class="badge bg-success">Winner</span>
         {% endif %}
       </li>
     {% endfor %}
   </ul>
-  <a href="{{ url_for('main.dashboard') }}">Back to dashboard</a>
+  <a href="{{ url_for('main.dashboard') }}" class="btn btn-link">Back to dashboard</a>
 {% endif %}
 {% endblock %}
