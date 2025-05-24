@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Speaker Assignments: {{ debate.title }}{% endblock %}
+{% block content %}
+<h2>Speaker Assignments for {{ debate.title }} ({{ debate.style }})</h2>
+{% if slots_by_room %}
+  {% for room, slots in slots_by_room.items() %}
+    <h4>Room {{ room }}</h4>
+    <table class="table table-bordered">
+      <thead>
+        <tr>
+          <th>Role</th>
+          <th>Name</th>
+          <th>Skill Level</th>
+          <th>Judge Skill</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for slot in slots %}
+        <tr>
+          <td>{{ slot.role }}</td>
+          <td>{{ user_map[slot.user_id].username }}</td>
+          <td>{{ user_map[slot.user_id].debate_skill }}</td>
+          <td>{{ user_map[slot.user_id].judge_skill }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  {% endfor %}
+{% else %}
+  <div class="alert alert-warning">No assignments available yet.</div>
+{% endif %}
+<a href="{{ url_for('main.debate_view', debate_id=debate.id) }}" class="btn btn-secondary">Back to Debate</a>
+{% endblock %}

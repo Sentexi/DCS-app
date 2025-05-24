@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
 from app.models import Debate, Topic, Vote
+from app.models import Debate, SpeakerSlot, User
 from app.extensions import db
 
 
@@ -64,3 +65,19 @@ def debate_view(debate_id):
                            topics=topics,
                            user_votes=user_votes,
                            votes_left=votes_left)
+                           
+@main_bp.route('/debate/<int:debate_id>/assignments')
+@login_required
+def debate_assignments(debate_id):
+    debate = Debate.query.get_or_404(debate_id)
+    slots = SpeakerSlot.query.filter_by(debate_id=debate_id).all()
+    # Optionally group by room for split debates
+    slots_by_room = {}
+    for slot in slots:
+        slots_by_room.setdefault(slot.room, []).append(slot)
+    # Get users by id for lookup
+    user_map = {u.id: u for u in User.query.filter(User.id.in_([s.user_id for s in slots])).all()}
+    return render_template('main/debate_assignments.html',
+                           debate=debate,
+                           slots_by_room=slots_by_room,
+                           user_map=user_map)
