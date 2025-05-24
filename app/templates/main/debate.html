@@ -34,4 +34,7 @@
   </ul>
   <a href="{{ url_for('main.dashboard') }}" class="btn btn-link">Back to dashboard</a>
 {% endif %}
+{% if current_user.is_admin or slots_by_room %}
+  <a href="{{ url_for('main.debate_assignments', debate_id=debate.id) }}" class="btn btn-info mt-3">View Speaker Assignments</a>
+{% endif %}
 {% endblock %}
