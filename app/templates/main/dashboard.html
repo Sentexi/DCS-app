@@ -3,6 +3,14 @@
 
 {% block content %}
 <h2>Active Debates</h2>
+{% if single_open %}
+<div class="alert alert-primary">
+  <strong>Current debate open for voting:</strong>
+  <a href="{{ url_for('main.debate_view', debate_id=single_open.id) }}" class="alert-link">
+      {{ single_open.title }} ({{ single_open.style }})
+  </a>
+</div>
+{% endif %}
 <ul>
   {% for debate in debates %}
     <li>
