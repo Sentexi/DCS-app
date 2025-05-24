@@ -1,5 +1,7 @@
-<!doctype html>
-<title>{{ debate.title }}</title>
+{% extends "base.html" %}
+{% block title %}{{ debate.title }}{% endblock %}
+
+{% block content %}
 <h2>{{ debate.title }} ({{ debate.style }})</h2>
 {% if voting_open %}
   <form method="post">
@@ -31,3 +33,4 @@
   </ul>
   <a href="{{ url_for('main.dashboard') }}">Back to dashboard</a>
 {% endif %}
+{% endblock %}

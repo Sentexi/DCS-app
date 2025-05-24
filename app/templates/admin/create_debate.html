@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Create Debate{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <h2>Create Debate</h2>
+    <form method="post" class="mb-3">
+        <div class="mb-3">
+            <label for="title" class="form-label">Title:</label>
+            <input id="title" name="title" class="form-control" required>
+        </div>
+        <div class="mb-3">
+            <label for="style" class="form-label">Style:</label>
+            <select id="style" name="style" class="form-select" required>
+                <option value="">Select style</option>
+                <option value="OPD">OPD</option>
+                <option value="BP">BP</option>
+            </select>
+        </div>
+        <button type="submit" class="btn btn-success">Create</button>
+        <a href="{{ url_for('admin.admin_dashboard') }}" class="btn btn-link">Back</a>
+    </form>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+{% endblock %}

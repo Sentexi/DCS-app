@@ -71,3 +71,86 @@ def toggle_voting(debate_id):
     status = "opened" if debate.voting_open else "closed"
     flash(f'Voting {status} for {debate.title}.', 'info')
     return redirect(url_for('admin.admin_dashboard'))
+
+# Edit debate
+@admin_bp.route('/admin/<int:debate_id>/edit', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def edit_debate(debate_id):
+    debate = Debate.query.get_or_404(debate_id)
+    if request.method == 'POST':
+        title = request.form['title']
+        style = request.form['style']
+        if title and style in ['OPD', 'BP']:
+            debate.title = title
+            debate.style = style
+            db.session.commit()
+            flash('Debate updated.', 'success')
+            return redirect(url_for('admin.admin_dashboard'))
+        flash('Invalid input.', 'danger')
+    return render_template('admin/edit_debate.html', debate=debate)
+
+# Delete debate
+@admin_bp.route('/admin/<int:debate_id>/delete', methods=['POST'])
+@login_required
+@admin_required
+def delete_debate(debate_id):
+    debate = Debate.query.get_or_404(debate_id)
+    db.session.delete(debate)
+    db.session.commit()
+    flash('Debate deleted.', 'info')
+    return redirect(url_for('admin.admin_dashboard'))
+
+# Edit topic
+@admin_bp.route('/admin/topic/<int:topic_id>/edit', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def edit_topic(topic_id):
+    topic = Topic.query.get_or_404(topic_id)
+    if request.method == 'POST':
+        text = request.form['text']
+        if text:
+            topic.text = text
+            db.session.commit()
+            flash('Topic updated.', 'success')
+            return redirect(url_for('admin.admin_dashboard'))
+        flash('Invalid input.', 'danger')
+    return render_template('admin/edit_topic.html', topic=topic)
+
+# Delete topic
+@admin_bp.route('/admin/topic/<int:topic_id>/delete', methods=['POST'])
+@login_required
+@admin_required
+def delete_topic(topic_id):
+    topic = Topic.query.get_or_404(topic_id)
+    db.session.delete(topic)
+    db.session.commit()
+    flash('Topic deleted.', 'info')
+    return redirect(url_for('admin.admin_dashboard'))
+
+@admin_bp.route('/admin/users')
+@login_required
+@admin_required
+def manage_users():
+    from app.models import User
+    users = User.query.all()
+    return render_template('admin/users.html', users=users)
+
+@admin_bp.route('/admin/users/<int:user_id>/toggle_admin', methods=['POST'])
+@login_required
+@admin_required
+def toggle_user_admin(user_id):
+    from app.models import User
+    user = User.query.get_or_404(user_id)
+    user.is_admin = not user.is_admin
+    db.session.commit()
+    flash(f"User '{user.username}' admin status changed.", "info")
+    return redirect(url_for('admin.manage_users'))
+
+@admin_bp.route('/admin/assign_speakers/<int:debate_id>')
+@login_required
+@admin_required
+def assign_speakers(debate_id):
+    debate = Debate.query.get_or_404(debate_id)
+    flash("Speaker assignment coming soon!", "info")
+    return redirect(url_for('admin.admin_dashboard'))

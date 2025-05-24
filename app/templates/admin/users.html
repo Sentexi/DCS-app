@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}User Management{% endblock %}
+
+{% block content %}
+<h2>User Management</h2>
+<table border="1">
+<tr><th>ID</th><th>Username</th><th>Email</th><th>Admin</th><th>Action</th></tr>
+{% for user in users %}
+<tr>
+    <td>{{ user.id }}</td>
+    <td>{{ user.username }}</td>
+    <td>{{ user.email }}</td>
+    <td>{{ user.is_admin }}</td>
+    <td>
+        <form action="{{ url_for('admin.toggle_user_admin', user_id=user.id) }}" method="post" style="display:inline;">
+            <button type="submit">{% if user.is_admin %}Revoke Admin{% else %}Make Admin{% endif %}</button>
+        </form>
+    </td>
+</tr>
+{% endfor %}
+</table>
+<a href="{{ url_for('admin.admin_dashboard') }}">Back</a>
+{% endblock %}

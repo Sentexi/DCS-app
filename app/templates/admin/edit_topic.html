@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Edit Topic{% endblock %}
+
+{% block content %}
+<h2>Edit Topic</h2>
+<form method="post">
+    Topic: <input name="text" value="{{ topic.text }}"><br>
+    <input type="submit" value="Save">
+</form>
+<a href="{{ url_for('admin.admin_dashboard') }}">Back</a>
+{% endblock %}

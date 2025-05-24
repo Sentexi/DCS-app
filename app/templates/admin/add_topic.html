@@ -1,8 +1,11 @@
-<!doctype html>
-<title>Add Topic</title>
+{% extends "base.html" %}
+{% block title %}Add Topic{% endblock %}
+
+{% block content %}
 <h2>Add Topic to {{ debate.title }}</h2>
 <form method="post">
     Topic: <input name="text"><br>
     <input type="submit" value="Add Topic">
 </form>
 <a href="{{ url_for('admin.admin_dashboard') }}">Back</a>
+{% endblock %}

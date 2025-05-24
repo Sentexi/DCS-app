@@ -1,5 +1,7 @@
-<!doctype html>
-<title>Login</title>
+{% extends "base.html" %}
+{% block title %}Login{% endblock %}
+
+{% block content %}
 <h2>Login</h2>
 <form method="post">
     Email: <input name="email" type="email"><br>
@@ -12,3 +14,4 @@
     <p style="color:red">{{ message }}</p>
   {% endfor %}
 {% endwith %}
+{% endblock %}

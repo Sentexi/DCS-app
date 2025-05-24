@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Edit Debate{% endblock %}
+
+{% block content %}
+<h2>Edit Debate</h2>
+<form method="post">
+    Title: <input name="title" value="{{ debate.title }}"><br>
+    Style:
+    <select name="style">
+        <option value="OPD" {% if debate.style == "OPD" %}selected{% endif %}>OPD</option>
+        <option value="BP" {% if debate.style == "BP" %}selected{% endif %}>BP</option>
+    </select><br>
+    <input type="submit" value="Save">
+</form>
+<a href="{{ url_for('admin.admin_dashboard') }}">Back</a>
+{% endblock %}
