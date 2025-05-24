@@ -2,6 +2,8 @@ from flask import render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
 from app.models import Debate, Topic
 from app.extensions import db
+from app.logic.assign import assign_speakers
+
 
 from . import admin_bp
 
@@ -146,11 +148,24 @@ def toggle_user_admin(user_id):
     db.session.commit()
     flash(f"User '{user.username}' admin status changed.", "info")
     return redirect(url_for('admin.manage_users'))
-
-@admin_bp.route('/admin/assign_speakers/<int:debate_id>')
+    
+@admin_bp.route('/admin/<int:debate_id>/assign', methods=['POST'])
 @login_required
-@admin_required
-def assign_speakers(debate_id):
+def run_assign(debate_id):
+    if not current_user.is_admin:
+        flash("Admin rights required.", "danger")
+        return redirect(url_for('main.dashboard'))
+
+    from app.models import Debate, User
     debate = Debate.query.get_or_404(debate_id)
-    flash("Speaker assignment coming soon!", "info")
+    # Option: Only assign users who registered or are eligible
+    users = User.query.all()
+
+    # Clean up previous assignments for this debate if re-running
+    from app.models import SpeakerSlot
+    SpeakerSlot.query.filter_by(debate_id=debate.id).delete()
+    db.session.commit()
+
+    ok, msg = assign_speakers(debate, users)
+    flash(msg, "success" if ok else "danger")
     return redirect(url_for('admin.admin_dashboard'))
