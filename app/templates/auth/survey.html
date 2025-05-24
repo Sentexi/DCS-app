@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Welcome Survey{% endblock %}
+{% block content %}
+<h2>Short Onboarding Survey</h2>
+<form method="post" class="mb-4">
+    <div class="mb-3">
+        <label class="form-label"><strong>When did you join the club?</strong></label>
+        <div class="form-check">
+            <input class="form-check-input" type="radio" name="date_joined_choice" id="first" value="first">
+            <label class="form-check-label" for="first">First debate</label>
+        </div>
+        <div class="form-check">
+            <input class="form-check-input" type="radio" name="date_joined_choice" id="lt2m" value="<2m">
+            <label class="form-check-label" for="lt2m">Less than two months ago</label>
+        </div>
+        <div class="form-check">
+            <input class="form-check-input" type="radio" name="date_joined_choice" id="2m6m" value="2m-6m">
+            <label class="form-check-label" for="2m6m">Two months to half a year</label>
+        </div>
+        <div class="form-check">
+            <input class="form-check-input" type="radio" name="date_joined_choice" id="6m1y" value="6m-1y">
+            <label class="form-check-label" for="6m1y">Half year to year</label>
+        </div>
+        <div class="form-check">
+            <input class="form-check-input" type="radio" name="date_joined_choice" id="1y2y" value="1y-2y">
+            <label class="form-check-label" for="1y2y">Year to two years</label>
+        </div>
+        <div class="form-check">
+            <input class="form-check-input" type="radio" name="date_joined_choice" id="gt2y" value=">2y">
+            <label class="form-check-label" for="gt2y">Longer than two years</label>
+        </div>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label"><strong>Judging: Would you wing or chair a debate?</strong></label>
+        <div class="form-check">
+            <input class="form-check-input" type="radio" name="judge_choice" id="nojudge" value="no">
+            <label class="form-check-label" for="nojudge">No</label>
+        </div>
+        <div class="form-check">
+            <input class="form-check-input" type="radio" name="judge_choice" id="wing" value="wing">
+            <label class="form-check-label" for="wing">Wing</label>
+        </div>
+        <div class="form-check">
+            <input class="form-check-input" type="radio" name="judge_choice" id="chair" value="chair">
+            <label class="form-check-label" for="chair">Chair</label>
+        </div>
+    </div>
+
+    <button type="submit" class="btn btn-success">Submit</button>
+</form>
+{% endblock %}

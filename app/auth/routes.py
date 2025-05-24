@@ -4,6 +4,7 @@ from flask_login import login_user, logout_user, login_required, current_user
 
 from app.extensions import db, login_manager
 from app.models import User
+from app.models import apply_skills
 
 from . import auth_bp 
 
@@ -60,3 +61,26 @@ def logout():
     logout_user()
     flash('You have been logged out.')
     return redirect(url_for('auth.login'))
+
+@auth_bp.route('/survey', methods=['GET', 'POST'])
+@login_required
+def survey():
+    # If survey already done, redirect to dashboard
+    if current_user.date_joined_choice:
+        return redirect(url_for('main.dashboard'))
+
+    if request.method == 'POST':
+        date_joined_choice = request.form.get('date_joined_choice')
+        judge_choice = request.form.get('judge_choice')
+        if not date_joined_choice or not judge_choice:
+            flash('Please answer all questions!', 'danger')
+            return render_template('auth/survey.html')
+
+        current_user.date_joined_choice = date_joined_choice
+        current_user.judge_choice = judge_choice
+        apply_skills(current_user)
+        db.session.commit()
+        flash('Thanks for your answers! Your skills have been set.', 'success')
+        return redirect(url_for('main.dashboard'))
+
+    return render_template('auth/survey.html')
