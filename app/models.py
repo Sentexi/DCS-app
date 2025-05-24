@@ -2,6 +2,33 @@
 
 from .extensions import db
 from flask_login import UserMixin
+from enum import Enum
+
+class JoinTimeEnum(db.Enum):
+    first = 'first'
+    less2m = '<2m'
+    less6m = '2m-6m'
+    less1y = '6m-1y'
+    less2y = '1y-2y'
+    more2y = '>2y'
+
+class JudgeChoiceEnum(db.Enum):
+    no = 'no'
+    wing = 'wing'
+    chair = 'chair'
+
+class DebateSkillEnum(db.Enum):
+    first_timer = 'First Timer'
+    beginner = 'Beginner'
+    intermediate = 'Intermediate'
+    advanced = 'Advanced'
+    expert = 'Expert'
+
+class JudgeSkillEnum(db.Enum):
+    cant_judge = 'Cant judge'
+    wing = 'Wing'
+    chair = 'Chair'
+
 
 # User model: represents app users (debaters, admins, etc.)
 class User(UserMixin, db.Model):
@@ -10,6 +37,11 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False)
     password = db.Column(db.String(256), nullable=False)  # hashed password
     is_admin = db.Column(db.Boolean, default=False)
+    date_joined_choice = db.Column(db.String(16), nullable=True)   # stores survey radio answer
+    judge_choice = db.Column(db.String(8), nullable=True)          # stores survey radio answer
+    debate_skill = db.Column(db.String(24), nullable=True)
+    judge_skill = db.Column(db.String(16), nullable=True)
+    debate_count = db.Column(db.Integer, default=0)
 
     # Relationship: which votes has this user cast?
     votes = db.relationship('Vote', back_populates='user', cascade='all, delete-orphan')
@@ -60,3 +92,21 @@ class Vote(db.Model):
 
     def __repr__(self):
         return f'<Vote user={self.user_id} topic={self.topic_id}>'
+
+JOIN_SKILL = {
+    'first': 'First Timer',
+    '<2m': 'Beginner',
+    '2m-6m': 'Beginner',
+    '6m-1y': 'Intermediate',
+    '1y-2y': 'Advanced',
+    '>2y': 'Expert'
+}
+JUDGE_SKILL = {
+    'no': 'Cant judge',
+    'wing': 'Wing',
+    'chair': 'Chair'
+}
+
+def apply_skills(user):
+    user.debate_skill = JOIN_SKILL.get(user.date_joined_choice, 'First Timer')
+    user.judge_skill = JUDGE_SKILL.get(user.judge_choice, 'Cant judge')
