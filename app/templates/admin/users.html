@@ -1,23 +1,44 @@
 {% extends "base.html" %}
 {% block title %}User Management{% endblock %}
-
 {% block content %}
 <h2>User Management</h2>
-<table border="1">
-<tr><th>ID</th><th>Username</th><th>Email</th><th>Admin</th><th>Action</th></tr>
-{% for user in users %}
-<tr>
-    <td>{{ user.id }}</td>
-    <td>{{ user.username }}</td>
-    <td>{{ user.email }}</td>
-    <td>{{ user.is_admin }}</td>
-    <td>
+<table class="table table-bordered table-striped">
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>Username</th>
+      <th>Email</th>
+      <th>Admin</th>
+      <th>Join Time (Survey)</th>
+      <th>Judging (Survey)</th>
+      <th>Debate Skill</th>
+      <th>Judge Skill</th>
+      <th>Debates Participated</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for user in users %}
+    <tr>
+      <td>{{ user.id }}</td>
+      <td>{{ user.username }}</td>
+      <td>{{ user.email }}</td>
+      <td>{% if user.is_admin %}<span class="badge bg-success">Yes</span>{% else %}No{% endif %}</td>
+      <td>{{ user.date_joined_choice or "—" }}</td>
+      <td>{{ user.judge_choice or "—" }}</td>
+      <td>{{ user.debate_skill or "—" }}</td>
+      <td>{{ user.judge_skill or "—" }}</td>
+      <td>{{ user.debate_count or 0 }}</td>
+      <td>
         <form action="{{ url_for('admin.toggle_user_admin', user_id=user.id) }}" method="post" style="display:inline;">
-            <button type="submit">{% if user.is_admin %}Revoke Admin{% else %}Make Admin{% endif %}</button>
+            <button type="submit" class="btn btn-sm btn-warning">
+                {% if user.is_admin %}Revoke Admin{% else %}Make Admin{% endif %}
+            </button>
         </form>
-    </td>
-</tr>
-{% endfor %}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
 </table>
-<a href="{{ url_for('admin.admin_dashboard') }}">Back</a>
+<a href="{{ url_for('admin.admin_dashboard') }}" class="btn btn-link">Back to Admin Dashboard</a>
 {% endblock %}
