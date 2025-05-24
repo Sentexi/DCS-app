@@ -1,0 +1,13 @@
+<!doctype html>
+<title>Create Debate</title>
+<h2>Create Debate</h2>
+<form method="post">
+    Title: <input name="title"><br>
+    Style:
+    <select name="style">
+        <option value="OPD">OPD</option>
+        <option value="BP">BP</option>
+    </select><br>
+    <input type="submit" value="Create">
+</form>
+<a href="{{ url_for('admin.admin_dashboard') }}">Back</a>

@@ -1,0 +1,22 @@
+<!doctype html>
+<title>Admin Dashboard</title>
+<h2>Debates</h2>
+<a href="{{ url_for('admin.create_debate') }}">Create new debate</a>
+<ul>
+{% for debate in debates %}
+    <li>
+        <b>{{ debate.title }}</b> ({{ debate.style }})
+        [ <a href="{{ url_for('admin.add_topic', debate_id=debate.id) }}">Add Topic</a> ]
+        [ <a href="{{ url_for('admin.toggle_voting', debate_id=debate.id) }}">
+            {% if debate.voting_open %}Close Voting{% else %}Open Voting{% endif %}
+        </a> ]
+        <ul>
+        {% for topic in debate.topics %}
+            <li>{{ topic.text }}</li>
+        {% endfor %}
+        </ul>
+    </li>
+{% else %}
+    <li>No debates created yet.</li>
+{% endfor %}
+</ul>
