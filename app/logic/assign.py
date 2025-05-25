@@ -1,48 +1,55 @@
-import random
+import math, random
 from app.models import SpeakerSlot, User, Debate
 from app.extensions import db
 from collections import Counter
 
-def assign_speakers(debate, users):
+def assign_speakers(debate, users, max_rooms=2):
     """
-    Dispatch to OPD or BP—and if there are enough participants,
-    split into two rooms (each one full debate) rather than
-    try to jam everyone into one room.
+    Dispatch to OPD or BP, splitting into at most max_rooms rooms,
+    and always using the fewest rooms needed.
     """
-    import random
 
-    if debate.style == 'OPD':
-        random.shuffle(users)
-        # OPD: split when 15+ participants
-        if len(users) >= 15:
-            mid = len(users) // 2
-            u1, u2 = users[:mid], users[mid:]
-            ok1, m1 = assign_opd_single_room(debate, u1, room=1)
-            ok2, m2 = assign_opd_single_room(debate, u2, room=2)
-            if ok1 and ok2:
-                return True, "Two OPD rooms assigned successfully."
-            return False, f"Room1: {m1} | Room2: {m2}"
-        else:
-            return assign_opd_single_room(debate, users, room=1)
+    users = list(users)
+    random.shuffle(users)
 
-    elif debate.style == 'BP':
-        random.shuffle(users)
-        # BP: split when 16+ participants (8 per room)
-        if len(users) >= 16:
-            # take first 8+1 for room1, next 8+1 for room2 if you want 1 judge each
-            # or simply split evenly and let assign_bp handle judge count
-            mid = len(users) // 2
-            u1, u2 = users[:mid], users[mid:]
-            ok1, m1 = assign_bp_single_room(debate, u1, room=1)
-            ok2, m2 = assign_bp_single_room(debate, u2, room=2)
-            if ok1 and ok2:
-                return True, "Two BP rooms assigned successfully."
-            return False, f"Room1: {m1} | Room2: {m2}"
-        else:
-            return assign_bp_single_room(debate, users, room=1)
-
+    # Determine thresholds
+    if debate.style == "OPD":
+        split_threshold = 15
+        helper = assign_opd_single_room
+    elif debate.style == "BP":
+        split_threshold = 18
+        helper = assign_bp_single_room
     else:
         return False, f"Unknown debate style: {debate.style}"
+
+    # Decide number of rooms
+    if len(users) < split_threshold or max_rooms < 2:
+        num_rooms = 1
+    else:
+        # Once you hit the threshold, always split into exactly 2 rooms
+        num_rooms = 2
+
+    # If only one room needed:
+    if num_rooms == 1:
+        return helper(debate, users, room=1)
+
+    # Otherwise split into num_rooms (here always 2), as evenly as possible
+    assignments_ok = []
+    messages = []
+    per_room = math.ceil(len(users) / num_rooms)
+    for room in range(1, num_rooms + 1):
+        start = (room - 1) * per_room
+        end   = start + per_room
+        subset = users[start:end]
+        ok, msg = helper(debate, subset, room=room)
+        assignments_ok.append(ok)
+        messages.append(f"Room{room}: {msg}")
+
+    if all(assignments_ok):
+        return True, " | ".join(messages)
+    else:
+        return False, " | ".join(messages)
+
 
 
 def assign_opd_single_room(debate, users, room=1):
