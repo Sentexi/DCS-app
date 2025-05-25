@@ -4,6 +4,7 @@ from sqlalchemy import distinct
 from app.models import Debate, Topic, Vote, User
 from app.extensions import db
 from app.logic.assign import assign_speakers
+from datetime import datetime, timedelta
 
 from . import admin_bp
 
@@ -93,14 +94,30 @@ def toggle_voting(debate_id):
 @login_required
 @admin_required
 def vote_stats(debate_id):
-    # Count all users who are eligible to vote (here: all users, adjust if you filter)
-    total_users = User.query.count()
-    # Count unique users who voted in this debate (via Topic relationship)
-    voted_users = (db.session.query(Vote.user_id)
-                   .join(Topic)
-                   .filter(Topic.debate_id == debate_id)
-                   .distinct()
-                   .count())
+    now = datetime.utcnow()
+    ten_minutes_ago = now - timedelta(minutes=10)
+
+    # Get IDs of recently active users
+    active_user_ids = set(
+        u.id for u in User.query.filter(User.last_seen >= ten_minutes_ago).all()
+    )
+
+    # Get IDs of users who have voted in this debate
+    voted_user_ids = set(
+        row[0]
+        for row in db.session.query(Vote.user_id)
+        .join(Topic)
+        .filter(Topic.debate_id == debate_id)
+        .distinct()
+        .all()
+    )
+
+    # Union: all users who are either active or have voted
+    eligible_user_ids = active_user_ids.union(voted_user_ids)
+
+    total_users = len(eligible_user_ids)
+    voted_users = len(voted_user_ids)
+
     return jsonify({
         'total_users': total_users,
         'voted_users': voted_users

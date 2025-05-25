@@ -27,6 +27,7 @@ def create_initial_admin():
                 print('Admin email already exists, skipping admin creation.')
         else:
             print('Admin user already exists.')
+            
 
 if __name__ == '__main__':
     create_initial_admin()

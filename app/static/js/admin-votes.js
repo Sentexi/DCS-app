@@ -23,5 +23,5 @@ document.addEventListener("DOMContentLoaded", function() {
     });
   }
   refreshVoteProgress();
-  setInterval(refreshVoteProgress, 10000);
+  setInterval(refreshVoteProgress, 1000);
 });

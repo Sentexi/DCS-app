@@ -3,6 +3,7 @@
 from .extensions import db
 from flask_login import UserMixin
 from enum import Enum
+from datetime import datetime
 
 class JoinTimeEnum(db.Enum):
     first = 'first'
@@ -42,6 +43,7 @@ class User(UserMixin, db.Model):
     debate_skill = db.Column(db.String(24), nullable=True)
     judge_skill = db.Column(db.String(16), nullable=True)
     debate_count = db.Column(db.Integer, default=0)
+    last_seen = db.Column(db.DateTime, default=datetime.utcnow)
 
     # Relationship: which votes has this user cast?
     votes = db.relationship('Vote', back_populates='user', cascade='all, delete-orphan')
