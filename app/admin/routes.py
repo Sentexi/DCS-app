@@ -1,10 +1,9 @@
-from flask import render_template, redirect, url_for, flash, request
+from flask import render_template, redirect, url_for, flash, request, jsonify
 from flask_login import login_required, current_user
 from sqlalchemy import distinct
-from app.models import Debate, Topic, Vote
+from app.models import Debate, Topic, Vote, User
 from app.extensions import db
 from app.logic.assign import assign_speakers
-
 
 from . import admin_bp
 
@@ -89,6 +88,23 @@ def toggle_voting(debate_id):
     status = "opened" if debate.voting_open else "closed"
     flash(f'Voting {status} for {debate.title}.', 'info')
     return redirect(url_for('admin.admin_dashboard'))
+    
+@admin_bp.route('/admin/debate/<int:debate_id>/vote_stats')
+@login_required
+@admin_required
+def vote_stats(debate_id):
+    # Count all users who are eligible to vote (here: all users, adjust if you filter)
+    total_users = User.query.count()
+    # Count unique users who voted in this debate (via Topic relationship)
+    voted_users = (db.session.query(Vote.user_id)
+                   .join(Topic)
+                   .filter(Topic.debate_id == debate_id)
+                   .distinct()
+                   .count())
+    return jsonify({
+        'total_users': total_users,
+        'voted_users': voted_users
+    })
 
 # Edit debate
 @admin_bp.route('/admin/<int:debate_id>/edit', methods=['GET', 'POST'])
