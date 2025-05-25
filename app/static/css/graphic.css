@@ -1,0 +1,23 @@
+/* typography & base */
+.diagram-opd,
+.diagram-bp {display:flex;flex-wrap:wrap;gap:.75rem}
+.bench      {flex:1 1 100%;padding:1rem;border-radius:.5rem}
+.free-area  {flex:1 1 100%;text-align:center}
+.gov-bench  {background:#e7f3ff}
+.opp-bench  {background:#ffe7e7}
+.bench-title{font-weight:600;margin-bottom:.5rem}
+
+.role-badge{display:inline-block;padding:.35rem .6rem;font-size:.9rem;
+  line-height:1.2;border-radius:1rem;background:#dee2e6}
+.role-badge.me{box-shadow:0 0 0 2px var(--bs-success)}
+.bp-team-card{flex:1 1 calc(25% - .75rem);background:#f8f9fa;padding:.75rem;
+  border-radius:.5rem;text-align:center}
+.bp-title{font-weight:600;margin-bottom:.25rem}
+.placeholder{opacity:.5;font-size:.85rem}
+.judges-row .role-badge{background:#cfe2ff}
+
+@media (min-width:768px){
+  .bench{flex:1 1 calc(50% - .75rem)}
+  .free-area{flex:1 1 calc(100% - 1.5rem);order:-1}
+  .diagram-opd{justify-content:space-between}
+}

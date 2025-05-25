@@ -1,107 +1,136 @@
 {% extends "base.html" %}
 {% block title %}Debate Layout – {{ debate.title }}{% endblock %}
 
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/graphic.css') }}">
+{% endblock %}
+
 {% block content %}
-<h2>Debate Layout: {{ debate.title }}</h2>
+<h2 class="mb-3">{{ debate.title }}</h2>
 
 {% if my_slot %}
-    <div class="alert alert-info">
-        You are <strong>{{ my_slot.role }}</strong> in Room {{ my_slot.room }}
-    </div>
+  <div class="alert alert-info">
+    <i class="bi bi-person-badge-fill"></i>
+    You are <strong>{{ my_slot.role }}</strong> in Room {{ my_slot.room }}
+  </div>
 {% endif %}
 
+{#— Room Selector (tabs on md+, dropdown on sm) —#}
 {% if slots_by_room|length > 1 %}
-    <ul class="nav nav-tabs mb-4">
-        {% for room in slots_by_room.keys()|sort %}
-            <li class="nav-item">
-                <a class="nav-link {% if room == (my_slot.room if my_slot else 1) %}active{% endif %}" 
-                   href="#room{{ room }}" data-bs-toggle="tab">
-                   Room {{ room }}
-                </a>
-            </li>
-        {% endfor %}
+  <div class="d-none d-md-block mb-3">
+    <ul class="nav nav-tabs">
+      {% for room in slots_by_room.keys()|sort %}
+        <li class="nav-item">
+          <a class="nav-link {% if room == active_room|default(my_slot.room) %}active{% endif %}"
+             href="{{ url_for('main.debate_graphic', debate_id=debate.id) }}?room={{ room }}">
+            Room {{ room }}
+          </a>
+        </li>
+      {% endfor %}
     </ul>
+  </div>
+
+  <div class="d-block d-md-none mb-3">
+    <select class="form-select" onchange="location = this.value;">
+      {% for room in slots_by_room.keys()|sort %}
+        <option value="{{ url_for('main.debate_graphic', debate_id=debate.id) }}?room={{ room }}"
+          {% if room == active_room|default(my_slot.room) %}selected{% endif %}>
+          Room {{ room }}
+        </option>
+      {% endfor %}
+    </select>
+  </div>
 {% endif %}
 
-<div class="tab-content">
-    {% for room, slots in slots_by_room.items() %}
-        <div class="tab-pane {% if room == (my_slot.room if my_slot else 1) %}active{% endif %}" id="room{{ room }}">
-            <h4>Room {{ room }}</h4>
-            {% if debate.style == "OPD" %}
-                <div class="row mb-3">
-                    <div class="col-md-5">
-                        <div class="card border-primary mb-3">
-                            <div class="card-header bg-primary text-white">Government</div>
-                            <div class="card-body">
-                                {% for slot in slots if slot.role == 'Gov' %}
-                                    <span class="badge rounded-pill {% if user.id == slot.user_id %}bg-success{% else %}bg-secondary{% endif %} m-1">
-                                        {{ slot.role }} - {{ slot.debate_ref.title }}<br>
-                                        {{ slot.user.username }}{% if user.id == slot.user_id %} (You){% endif %}
-                                    </span>
-                                {% endfor %}
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-2 d-flex align-items-center justify-content-center">
-                        <div>
-                            {% for slot in slots if "Free" in slot.role %}
-                                <span class="badge rounded-pill {% if user.id == slot.user_id %}bg-success{% else %}bg-warning{% endif %} m-1">
-                                    {{ slot.role }}<br>
-                                    {{ slot.user.username }}{% if user.id == slot.user_id %} (You){% endif %}
-                                </span>
-                            {% endfor %}
-                        </div>
-                    </div>
-                    <div class="col-md-5">
-                        <div class="card border-danger mb-3">
-                            <div class="card-header bg-danger text-white">Opposition</div>
-                            <div class="card-body">
-                                {% for slot in slots if slot.role == 'Opp' %}
-                                    <span class="badge rounded-pill {% if user.id == slot.user_id %}bg-success{% else %}bg-secondary{% endif %} m-1">
-                                        {{ slot.role }} - {{ slot.debate_ref.title }}<br>
-                                        {{ slot.user.username }}{% if user.id == slot.user_id %} (You){% endif %}
-                                    </span>
-                                {% endfor %}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="mb-3">
-                    {% for slot in slots if "Judge" in slot.role %}
-                        <span class="badge bg-info m-1">
-                            {{ slot.role }}: {{ slot.user.username }}{% if user.id == slot.user_id %} (You){% endif %}
-                        </span>
-                    {% endfor %}
-                </div>
-            {% elif debate.style == "BP" %}
-                <div class="row mb-3">
-                    {% set teams = ['OG', 'OO', 'CG', 'CO'] %}
-                    {% for team in teams %}
-                        <div class="col-md-3">
-                            <div class="card border-secondary mb-3">
-                                <div class="card-header">{{ team }}</div>
-                                <div class="card-body">
-                                    {% for slot in slots if slot.role == team %}
-                                        <span class="badge rounded-pill {% if user.id == slot.user_id %}bg-success{% else %}bg-secondary{% endif %} m-1">
-                                            {{ slot.user.username }}{% if user.id == slot.user_id %} (You){% endif %}
-                                        </span>
-                                    {% endfor %}
-                                </div>
-                            </div>
-                        </div>
-                    {% endfor %}
-                </div>
-                <div class="mb-3">
-                    {% for slot in slots if "Judge" in slot.role %}
-                        <span class="badge bg-info m-1">
-                            {{ slot.role }}: {{ slot.user.username }}{% if user.id == slot.user_id %} (You){% endif %}
-                        </span>
-                    {% endfor %}
-                </div>
-            {% endif %}
-        </div>
-    {% endfor %}
-</div>
+{% set room = active_room|default(my_slot.room if my_slot else slots_by_room.keys()|list|first) %}
+{% set slots = slots_by_room[room] %}
 
-<a href="{{ url_for('main.debate_view', debate_id=debate.id) }}" class="btn btn-secondary mt-4">Back to debate</a>
+{% if debate.style == "OPD" %}
+  <div class="diagram-opd">
+    <div class="bench gov-bench">
+      <h5 class="bench-title">Government</h5>
+      {% for slot in slots if slot.role == 'Gov' %}
+        {% include 'main/_role_badge.html' %}
+      {% endfor %}
+    </div>
+
+    <div class="free-area">
+      <h6>Free Speakers</h6>
+      {% set free = slots|selectattr('role', 'startswith', 'Free')|list %}
+      {% if free %}
+        {% for slot in free %}
+          {% include 'main/_role_badge.html' %}
+        {% endfor %}
+      {% else %}
+        <span class="placeholder">No Free Speaker</span>
+      {% endif %}
+    </div>
+
+    <div class="bench opp-bench">
+      <h5 class="bench-title">Opposition</h5>
+      {% for slot in slots if slot.role == 'Opp' %}
+        {% include 'main/_role_badge.html' %}
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="judges-row mt-3 overflow-auto">
+    {% set judges = slots|selectattr('role', 'startswith', 'Judge')|list %}
+    {% if judges %}
+      {% for slot in judges %}
+        {% include 'main/_role_badge.html' %}
+      {% endfor %}
+    {% else %}
+      <span class="placeholder">No Judges Assigned</span>
+    {% endif %}
+  </div>
+
+{% else %}
+  <div class="diagram-bp">
+    {% for team in ['OG','OO','CG','CO'] %}
+      <div class="bp-team-card">
+        <h6 class="bp-title">{{ team }}</h6>
+        {% set team_slots = slots|selectattr('role', 'equalto', team)|list %}
+        {% if team_slots %}
+          {% for slot in team_slots %}
+            {% include 'main/_role_badge.html' %}
+          {% endfor %}
+        {% else %}
+          <span class="placeholder">Empty</span>
+        {% endif %}
+      </div>
+    {% endfor %}
+  </div>
+
+  <div class="judges-row mt-3 overflow-auto">
+    {% for slot in slots if slot.role.startswith('Judge') %}
+      {% include 'main/_role_badge.html' %}
+    {% endfor %}
+  </div>
+{% endif %}
+
+<a href="{{ url_for('main.debate_view', debate_id=debate.id) }}"
+   class="btn btn-secondary mt-4">Back to debate</a>
+
+<nav class="position-fixed bottom-0 end-0 p-3">
+  <button id="themeToggle" class="btn btn-outline-secondary btn-sm">
+    <i class="bi bi-moon-fill"></i>
+  </button>
+</nav>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  // Dark-mode toggle
+  const btn = document.getElementById('themeToggle');
+  const stored = localStorage.getItem('theme') || 'light';
+  document.documentElement.setAttribute('data-bs-theme', stored);
+  btn.addEventListener('click', () => {
+    const current = document.documentElement.getAttribute('data-bs-theme');
+    const next = current === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-bs-theme', next);
+    localStorage.setItem('theme', next);
+  });
+</script>
 {% endblock %}

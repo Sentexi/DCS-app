@@ -5,6 +5,11 @@ from .extensions import db, login_manager, migrate
 
 def create_app(config_file=None):
     app = Flask(__name__)
+    
+    # Enable a 'startswith' test in our Jinja templates
+    app.jinja_env.tests['startswith'] = lambda val, prefix: (
+        isinstance(val, str) and val.startswith(prefix)
+    )
 
     # Basic config (you can improve this later)
     app.config['SECRET_KEY'] = 'dev'  # change in prod!
