@@ -44,25 +44,6 @@ def assign_speakers(debate, users):
     else:
         return False, f"Unknown debate style: {debate.style}"
 
-
-def assign_opd(debate, users):
-    """
-    Implements your OPD assignment rules.
-    """
-    random.shuffle(users)  # Always randomize!
-
-    # SPLIT INTO ROOMS IF 15+
-    if len(users) >= 15:
-        mid = len(users) // 2
-        users1, users2 = users[:mid], users[mid:]
-        ok1, msg1 = assign_opd_single_room(debate, users1, room=1)
-        ok2, msg2 = assign_opd_single_room(debate, users2, room=2)
-        if ok1 and ok2:
-            return True, "Two rooms assigned successfully."
-        else:
-            return False, f"Room 1: {msg1} | Room 2: {msg2}"
-    else:
-        return assign_opd_single_room(debate, users, room=1)
         
 def assign_bp(debate, users):
     return assign_bp_single_room(debate, users, room=1)
