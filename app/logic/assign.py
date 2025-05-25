@@ -44,9 +44,6 @@ def assign_speakers(debate, users):
     else:
         return False, f"Unknown debate style: {debate.style}"
 
-        
-def assign_bp(debate, users):
-    return assign_bp_single_room(debate, users, room=1)
 
 def assign_opd_single_room(debate, users, room=1):
     """
