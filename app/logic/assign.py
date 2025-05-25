@@ -157,34 +157,103 @@ def assign_opd_single_room(debate, users, room=1):
     return True, f"Room {room}: OPD assignment complete."
 
 
-
-
-
-
 def assign_bp(debate, users):
     """
-    Assigns speakers for BP format.
+    Assigns speakers for BP format with ProAm constraint.
+    1. Chair judge first (prefer 'Chair', fallback to Wing/non-First-Timer)
+    2. 8 speakers, paired so no team has two First Timers unless unavoidable
+    3. 4 teams: OG, OO, CG, CO (two debaters each)
+    4. Remaining: assign as Wings
     """
-    random.shuffle(users)
-    # Main speakers (8), teams of 2
-    if len(users) < 8:
-        return False, "Not enough participants for BP (need at least 8)."
-    speakers = users[:8]
-    remaining = users[8:]
-    slots = []
-    for i, user in enumerate(speakers):
-        team_num = i // 2 + 1
-        side = "Gov" if i % 4 < 2 else "Opp"
-        team = f"{side}-{team_num}"
-        slots.append(SpeakerSlot(debate_id=debate.id, user_id=user.id, role=f"{team}", room=1))
-    # Up to 3 judges
-    judges = [u for u in remaining if u.judge_skill in ('Wing','Chair')]
-    for idx, user in enumerate(judges[:3]):
-        role = "Judge-Chair" if user.judge_skill == "Chair" and idx == 0 else "Judge-Wing"
+    import random
+    from app.models import SpeakerSlot
+    from app.extensions import db
+
+    pool = list(users)
+    random.shuffle(pool)
+
+    is_chair = lambda u: getattr(u, "judge_skill", "") == "Chair"
+    is_wing  = lambda u: getattr(u, "judge_skill", "") == "Wing"
+    is_first = lambda u: getattr(u, "debate_skill", "") == "First Timer"
+
+    # --- 1. Assign Chair ---
+    chair_user = next((u for u in pool if is_chair(u)), None)
+    if not chair_user:
+        chair_user = next((u for u in pool if is_wing(u) and not is_first(u)), None)
+    if not chair_user:
+        chair_user = next((u for u in pool if not is_first(u)), None)
+    if not chair_user:
+        return False, "No eligible Chair judge for BP."
+
+    slots = [
+        SpeakerSlot(debate_id=debate.id, user_id=chair_user.id, role="Judge-Chair", room=1)
+    ]
+    pool.remove(chair_user)
+
+    # --- 2. Assign 8 speakers with ProAm pairing ---
+    # Split pool into First Timers and Non-First-Timers
+    first_timers = [u for u in pool if is_first(u)]
+    non_firsts   = [u for u in pool if not is_first(u)]
+
+    teams = []
+    speakers = []
+
+    # Attempt to pair each First Timer with a Non-First-Timer
+    while first_timers and non_firsts and len(speakers) < 8:
+        ft = first_timers.pop(0)
+        nf = non_firsts.pop(0)
+        teams.append((ft, nf))
+        speakers.extend([ft, nf])
+    # If still more needed, fill with remaining non-First-Timers
+    while len(speakers) < 8 and non_firsts:
+        nf = non_firsts.pop(0)
+        speakers.append(nf)
+    # If still more needed, fill with remaining First Timers (may create a First-Timer pair)
+    while len(speakers) < 8 and first_timers:
+        ft = first_timers.pop(0)
+        speakers.append(ft)
+    # Final check
+    if len(speakers) < 8:
+        return False, "Not enough eligible debaters for BP."
+
+    # Now, group into 4 teams of 2, with ProAm enforced where possible
+    bp_roles = ["OG", "OG", "OO", "OO", "CG", "CG", "CO", "CO"]
+    for user, role in zip(speakers, bp_roles):
         slots.append(SpeakerSlot(debate_id=debate.id, user_id=user.id, role=role, room=1))
+    # Remove these users from pool
+    for u in speakers:
+        pool.remove(u)
+
+    # --- 3. Assign Wings from remaining ---
+    # Assign up to 3 judges: first Wing, then fallback to any non-First-Timer, then (if needed) anyone
+    wings = [u for u in pool if is_wing(u)]
+    non_firsts_judge = [u for u in pool if not is_first(u) and u not in wings]
+    others = [u for u in pool if u not in wings + non_firsts_judge]
+
+    wings_assigned = 0
+    for u in wings:
+        if wings_assigned == 0:
+            slots.append(SpeakerSlot(debate_id=debate.id, user_id=u.id, role="Judge-Wing", room=1))
+        else:
+            slots.append(SpeakerSlot(debate_id=debate.id, user_id=u.id, role="Judge-Wing", room=1))
+        wings_assigned += 1
+
+    for u in non_firsts_judge:
+        slots.append(SpeakerSlot(debate_id=debate.id, user_id=u.id, role="Judge-Wing", room=1))
+        wings_assigned += 1
+        if wings_assigned >= 3:
+            break
+    for u in others:
+        if wings_assigned >= 3:
+            break
+        slots.append(SpeakerSlot(debate_id=debate.id, user_id=u.id, role="Judge-Wing", room=1))
+        wings_assigned += 1
+
+    # --- Commit (guaranteeing no duplicate SpeakerSlot) ---
     for slot in slots:
         exists = SpeakerSlot.query.filter_by(debate_id=debate.id, user_id=slot.user_id, room=1).first()
         if not exists:
             db.session.add(slot)
     db.session.commit()
     return True, "BP speaker assignment complete."
+
