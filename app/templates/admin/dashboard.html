@@ -6,16 +6,6 @@
     <h2 class="mb-4">Admin Dashboard</h2>
     <a href="{{ url_for('admin.create_debate') }}" class="btn btn-success mb-3">Create New Debate</a>
     <a href="{{ url_for('admin.manage_users') }}" class="btn btn-secondary mb-3 ms-2">User Management</a>
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-        {% for category, message in messages %}
-          <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-            {{ message }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-          </div>
-        {% endfor %}
-      {% endif %}
-    {% endwith %}
 
     {% if debates %}
     <div class="accordion" id="debateAccordion">
