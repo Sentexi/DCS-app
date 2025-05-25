@@ -45,7 +45,10 @@ def debate_view(debate_id):
             flash('You can only vote for up to 2 topics per debate.', 'danger')
         else:
             # Bump debate_count if this is their first vote in this debate
+            
             if user_votes_in_debate == 0:
+                if current_user.debate_count is None:
+                    current_user.debate_count = 0
                 current_user.debate_count += 1
             vote = Vote(user_id=current_user.id, topic_id=topic_id)
             db.session.add(vote)
