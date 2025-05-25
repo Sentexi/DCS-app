@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
+from sqlalchemy.orm import joinedload
 from app.models import Debate, Topic, Vote
 from app.models import Debate, SpeakerSlot, User
 from app.extensions import db
@@ -26,7 +27,7 @@ def debate_view(debate_id):
     if not current_user.date_joined_choice:
         return redirect(url_for('auth.survey'))
 
-    debate = Debate.query.get_or_404(debate_id)
+    debate = Debate.query.options(joinedload(Debate.speakerslots)).get_or_404(debate_id)
     topics = debate.topics  # adjust as needed
 
     # voting logic
@@ -84,3 +85,37 @@ def debate_assignments(debate_id):
                            debate=debate,
                            slots_by_room=slots_by_room,
                            user_map=user_map)
+
+@main_bp.route('/debate/<int:debate_id>/graphic')
+@login_required
+def debate_graphic(debate_id):
+    from sqlalchemy.orm import joinedload
+    debate = Debate.query.options(
+        joinedload(Debate.speakerslots),
+        joinedload(Debate.topics)
+    ).get_or_404(debate_id)
+
+    if not debate.assignment_complete:
+        flash('Speaker assignments are not complete for this debate.', 'warning')
+        return redirect(url_for('main.debate_view', debate_id=debate_id))
+
+    # Find current user's slot
+    my_slot = SpeakerSlot.query.filter_by(debate_id=debate_id, user_id=current_user.id).first()
+
+    # For admins, allow seeing all, otherwise restrict access
+    if not my_slot and not current_user.is_admin:
+        flash('You are not assigned to this debate.', 'danger')
+        return redirect(url_for('main.debate_view', debate_id=debate_id))
+
+    # Group slots by room (for multi-room support)
+    slots_by_room = {}
+    for slot in debate.speakerslots:
+        slots_by_room.setdefault(slot.room, []).append(slot)
+
+    return render_template(
+        'main/graphic.html',
+        debate=debate,
+        slots_by_room=slots_by_room,
+        my_slot=my_slot,
+        user=current_user
+    )

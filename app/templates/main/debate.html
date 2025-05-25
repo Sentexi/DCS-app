@@ -37,4 +37,9 @@
 {% if current_user.is_admin or slots_by_room %}
   <a href="{{ url_for('main.debate_assignments', debate_id=debate.id) }}" class="btn btn-info mt-3">View Speaker Assignments</a>
 {% endif %}
+{% if debate.assignment_complete %}
+    <a href="{{ url_for('main.debate_graphic', debate_id=debate.id) }}" class="btn btn-primary mt-3">
+        View Speaker Positions
+    </a>
+{% endif %}
 {% endblock %}

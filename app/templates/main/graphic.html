@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}Debate Layout – {{ debate.title }}{% endblock %}
+
+{% block content %}
+<h2>Debate Layout: {{ debate.title }}</h2>
+
+{% if my_slot %}
+    <div class="alert alert-info">
+        You are <strong>{{ my_slot.role }}</strong> in Room {{ my_slot.room }}
+    </div>
+{% endif %}
+
+{% if slots_by_room|length > 1 %}
+    <ul class="nav nav-tabs mb-4">
+        {% for room in slots_by_room.keys()|sort %}
+            <li class="nav-item">
+                <a class="nav-link {% if room == (my_slot.room if my_slot else 1) %}active{% endif %}" 
+                   href="#room{{ room }}" data-bs-toggle="tab">
+                   Room {{ room }}
+                </a>
+            </li>
+        {% endfor %}
+    </ul>
+{% endif %}
+
+<div class="tab-content">
+    {% for room, slots in slots_by_room.items() %}
+        <div class="tab-pane {% if room == (my_slot.room if my_slot else 1) %}active{% endif %}" id="room{{ room }}">
+            <h4>Room {{ room }}</h4>
+            {% if debate.style == "OPD" %}
+                <div class="row mb-3">
+                    <div class="col-md-5">
+                        <div class="card border-primary mb-3">
+                            <div class="card-header bg-primary text-white">Government</div>
+                            <div class="card-body">
+                                {% for slot in slots if slot.role == 'Gov' %}
+                                    <span class="badge rounded-pill {% if user.id == slot.user_id %}bg-success{% else %}bg-secondary{% endif %} m-1">
+                                        {{ slot.role }} - {{ slot.debate_ref.title }}<br>
+                                        {{ slot.user.username }}{% if user.id == slot.user_id %} (You){% endif %}
+                                    </span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-2 d-flex align-items-center justify-content-center">
+                        <div>
+                            {% for slot in slots if "Free" in slot.role %}
+                                <span class="badge rounded-pill {% if user.id == slot.user_id %}bg-success{% else %}bg-warning{% endif %} m-1">
+                                    {{ slot.role }}<br>
+                                    {{ slot.user.username }}{% if user.id == slot.user_id %} (You){% endif %}
+                                </span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="col-md-5">
+                        <div class="card border-danger mb-3">
+                            <div class="card-header bg-danger text-white">Opposition</div>
+                            <div class="card-body">
+                                {% for slot in slots if slot.role == 'Opp' %}
+                                    <span class="badge rounded-pill {% if user.id == slot.user_id %}bg-success{% else %}bg-secondary{% endif %} m-1">
+                                        {{ slot.role }} - {{ slot.debate_ref.title }}<br>
+                                        {{ slot.user.username }}{% if user.id == slot.user_id %} (You){% endif %}
+                                    </span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    {% for slot in slots if "Judge" in slot.role %}
+                        <span class="badge bg-info m-1">
+                            {{ slot.role }}: {{ slot.user.username }}{% if user.id == slot.user_id %} (You){% endif %}
+                        </span>
+                    {% endfor %}
+                </div>
+            {% elif debate.style == "BP" %}
+                <div class="row mb-3">
+                    {% set teams = ['OG', 'OO', 'CG', 'CO'] %}
+                    {% for team in teams %}
+                        <div class="col-md-3">
+                            <div class="card border-secondary mb-3">
+                                <div class="card-header">{{ team }}</div>
+                                <div class="card-body">
+                                    {% for slot in slots if slot.role == team %}
+                                        <span class="badge rounded-pill {% if user.id == slot.user_id %}bg-success{% else %}bg-secondary{% endif %} m-1">
+                                            {{ slot.user.username }}{% if user.id == slot.user_id %} (You){% endif %}
+                                        </span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+                <div class="mb-3">
+                    {% for slot in slots if "Judge" in slot.role %}
+                        <span class="badge bg-info m-1">
+                            {{ slot.role }}: {{ slot.user.username }}{% if user.id == slot.user_id %} (You){% endif %}
+                        </span>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+    {% endfor %}
+</div>
+
+<a href="{{ url_for('main.debate_view', debate_id=debate.id) }}" class="btn btn-secondary mt-4">Back to debate</a>
+{% endblock %}

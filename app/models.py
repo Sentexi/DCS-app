@@ -46,6 +46,10 @@ class User(UserMixin, db.Model):
     # Relationship: which votes has this user cast?
     votes = db.relationship('Vote', back_populates='user', cascade='all, delete-orphan')
     slots = db.relationship('SpeakerSlot', backref='user', lazy='dynamic')
+    
+    def get_slot_for_debate(self, debate_id):
+        from app.models import SpeakerSlot
+        return SpeakerSlot.query.filter_by(debate_id=debate_id, user_id=self.id).first()
 
     def __repr__(self):
         return f'<User {self.username}>'
@@ -60,6 +64,11 @@ class Debate(db.Model):
     # Relationship: which topics belong to this debate?
     topics = db.relationship('Topic', back_populates='debate', cascade='all, delete-orphan')
     slots = db.relationship('SpeakerSlot', backref='debate', lazy='dynamic')
+    speakerslots = db.relationship(
+        'SpeakerSlot', backref='debate_ref', lazy=True, cascade="all, delete-orphan"
+    )
+    
+    assignment_complete = db.Column(db.Boolean, default=False)
 
     def __repr__(self):
         return f'<Debate {self.title} ({self.style})>'
