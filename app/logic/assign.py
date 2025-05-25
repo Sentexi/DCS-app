@@ -28,24 +28,29 @@ def assign_speakers(debate, users, max_rooms=2):
     else:
         # Once you hit the threshold, always split into exactly 2 rooms
         num_rooms = 2
+        
+    assignments_ok = []
+    messages = []
 
     # If only one room needed:
     if num_rooms == 1:
-        return helper(debate, users, room=1)
-
-    # Otherwise split into num_rooms (here always 2), as evenly as possible
-    assignments_ok = []
-    messages = []
-    per_room = math.ceil(len(users) / num_rooms)
-    for room in range(1, num_rooms + 1):
-        start = (room - 1) * per_room
-        end   = start + per_room
-        subset = users[start:end]
-        ok, msg = helper(debate, subset, room=room)
+        ok, msg = helper(debate, users, room=1)
         assignments_ok.append(ok)
-        messages.append(f"Room{room}: {msg}")
+        messages.append(msg)
+    else:
+        # Otherwise split into num_rooms (here always 2), as evenly as possible
+        per_room = math.ceil(len(users) / num_rooms)
+        for room in range(1, num_rooms + 1):
+            start = (room - 1) * per_room
+            end   = start + per_room
+            subset = users[start:end]
+            ok, msg = helper(debate, subset, room=room)
+            assignments_ok.append(ok)
+            messages.append(f"Room{room}: {msg}")    
 
     if all(assignments_ok):
+        debate.assignment_complete = True
+        db.session.commit() 
         return True, " | ".join(messages)
     else:
         return False, " | ".join(messages)
