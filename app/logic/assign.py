@@ -1,6 +1,7 @@
 import random
 from app.models import SpeakerSlot, User, Debate
 from app.extensions import db
+from collections import Counter
 
 def assign_speakers(debate, users):
     """
@@ -115,6 +116,40 @@ def assign_opd_single_room(debate, users, room=1):
             SpeakerSlot(debate_id=debate.id, user_id=u.id,
                         role="Judge-Wing", room=room)
         )
+    
+    # ---------- INTEGRITY CHECK ------------------------------------------------
+    roles = [a.role for a in assignments]
+    user_ids = [a.user_id for a in assignments]
+
+    role_counts = Counter(roles)
+
+    # 1. One Judge-Chair
+    if role_counts.get("Judge-Chair", 0) != 1:
+        return False, "Integrity Error: Must have exactly 1 Chair judge."
+
+    # 2. Exactly 6 speakers (Gov/Opp)
+    speaker_count = sum(1 for r in roles if r in ("Gov", "Opp"))
+    if speaker_count != 6:
+        return False, "Integrity Error: Must have exactly 6 Gov/Opp speakers."
+
+    # 3. Only one Judge-Wing before free speakers
+    # Already enforced by logic — you can just count total Judge-Wings
+
+    # 4. Free speakers must be labeled correctly and max 3
+    free_roles = [r for r in roles if r.startswith("Free")]
+    if len(free_roles) > 3:
+        return False, "Integrity Error: Too many free speakers."
+    if sorted(free_roles) != [f"Free-{i+1}" for i in range(len(free_roles))]:
+        return False, "Integrity Error: Free speaker labels are malformed."
+
+    # 5. All other users should be assigned as Judge-Wing
+    valid_roles = {"Gov", "Opp", "Judge-Chair", "Judge-Wing"} | set(free_roles)
+    if any(r not in valid_roles for r in roles):
+        return False, "Integrity Error: Invalid roles detected."
+
+    # 6. No duplicate user assignments
+    if len(set(user_ids)) != len(user_ids):
+        return False, "Integrity Error: Duplicate user assignment detected."
 
     # ---------- COMMIT ------------------------------------------------------
     db.session.bulk_save_objects(assignments)
