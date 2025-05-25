@@ -1,6 +1,7 @@
 from flask import render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
-from app.models import Debate, Topic
+from sqlalchemy import distinct
+from app.models import Debate, Topic, Vote
 from app.extensions import db
 from app.logic.assign import assign_speakers
 
@@ -24,7 +25,22 @@ def admin_required(f):
 @admin_required
 def admin_dashboard():
     debates = Debate.query.all()
-    return render_template('admin/dashboard.html', debates=debates)
+    # Build voter count per debate
+    voter_counts = {}
+    for debate in debates:
+        topic_ids = [t.id for t in debate.topics]
+        if topic_ids:
+            # Query for unique user_ids who voted for any topic in this debate
+            count = (db.session.query(Vote.user_id)
+                     .filter(Vote.topic_id.in_(topic_ids))
+                     .distinct()
+                     .count())
+        else:
+            count = 0
+        voter_counts[debate.id] = count
+    print(voter_counts)
+    return render_template("admin/dashboard.html", debates=debates, voter_counts=voter_counts)
+
 
 # Create debate
 @admin_bp.route('/admin/create_debate', methods=['GET', 'POST'])
@@ -169,3 +185,5 @@ def run_assign(debate_id):
     ok, msg = assign_speakers(debate, users)
     flash(msg, "success" if ok else "danger")
     return redirect(url_for('admin.admin_dashboard'))
+
+
