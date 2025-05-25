@@ -38,57 +38,93 @@ def assign_opd(debate, users):
 
 def assign_opd_single_room(debate, users, room=1):
     """
-    Assigns OPD slots for one room.
+    OPD single-room assignment:
+      1. Chair judge
+      2. Six main speakers
+      3. One Wing judge
+      4. Up to three free speakers
+      5. Remaining participants become extra Wings
     """
-    # 1. Separate judges (Wing/Chair) and eligible for chair
-    judges = [u for u in users if (u.judge_skill in ('Wing','Chair'))]
-    chairs = [u for u in judges if u.judge_skill == 'Chair']
-    wings  = [u for u in judges if u.judge_skill == 'Wing']
-    non_judges = [u for u in users if u not in judges]
-    # 2. Always at least one chair; if not present, promote random wing (if available)
-    if not chairs:
-        if wings:
-            promoted = random.choice(wings)
-            promoted.judge_skill = 'Chair'
-            chairs.append(promoted)
-            wings.remove(promoted)
-        else:
-            return False, "No eligible chair judge in participants."
-    # 3. Assign main speakers (6)
-    # At least two teams, each with at least one Intermediate or better
-    # (Add this skill-balancing logic if you like; for now, random)
-    first_timers = [u for u in non_judges if u.debate_skill == "First Timer"]
-    free_speakers_pool = [u for u in non_judges if u.debate_skill != "First Timer"]
-    team_speakers = non_judges.copy()
-    if len(users) >= 6:
-        main_speakers = team_speakers[:6]
-        remaining = team_speakers[6:]
-    else:
-        return False, "Not enough speakers for 6 team slots."
-    # 4. Fill out judges and free speakers as needed
-    num_judges = min(3, len(judges))
-    num_free = max(1, len(users) - (6 + num_judges))
-    slots = []
-    # Assign main speakers to roles (3 gov, 3 opp)
-    for idx, user in enumerate(main_speakers):
-        team = "Gov" if idx < 3 else "Opp"
-        pos  = idx % 3 + 1
-        slots.append(SpeakerSlot(debate_id=debate.id, user_id=user.id, role=f"{team}-{pos}", room=room))
-    # Assign judges: chair first, then wings
-    if chairs:
-        slots.append(SpeakerSlot(debate_id=debate.id, user_id=chairs[0].id, role="Judge-Chair", room=room))
-    for w in wings[:num_judges-1]:
-        slots.append(SpeakerSlot(debate_id=debate.id, user_id=w.id, role="Judge-Wing", room=room))
-    # Assign free speakers (remaining non-judges who aren't First Timers)
-    for idx, user in enumerate(remaining[:num_free]):
-        slots.append(SpeakerSlot(debate_id=debate.id, user_id=user.id, role=f"Free-{idx+1}", room=room))
-    # Save assignments (prevent duplicates)
-    for slot in slots:
-        exists = SpeakerSlot.query.filter_by(debate_id=debate.id, user_id=slot.user_id, room=room).first()
-        if not exists:
-            db.session.add(slot)
+    import random
+    from app.models import SpeakerSlot
+    from app.extensions import db
+
+    pool = list(users)
+    random.shuffle(pool)                           # randomness
+
+    if len(pool) < 6:
+        return False, "Need at least 6 participants."
+
+    # ---------- helper lambdas ---------------------------------------------
+    is_chair = lambda u: getattr(u, "judge_skill", "") == "Chair"
+    is_wing  = lambda u: getattr(u, "judge_skill", "") == "Wing"
+    is_first = lambda u: getattr(u, "debate_skill", "") == "First Timer"
+
+    # ---------- 1. CHAIR ----------------------------------------------------
+    chair_user = next((u for u in pool if is_chair(u)), None)
+    if not chair_user:
+        chair_user = next((u for u in pool if is_wing(u) and not is_first(u)), None)
+    if not chair_user:
+        chair_user = next((u for u in pool if not is_first(u)), None)
+    if not chair_user:
+        return False, "No eligible Chair judge."
+
+    assignments = [
+        SpeakerSlot(debate_id=debate.id, user_id=chair_user.id,
+                    role="Judge-Chair", room=room)
+    ]
+    pool.remove(chair_user)
+
+    # ---------- 2. SIX MAIN SPEAKERS ---------------------------------------
+    if len(pool) < 6:
+        return False, "Not enough remaining for 6 main speakers."
+
+    roles = ["Gov"] * 3 + ["Opp"] * 3
+    main_speakers = pool[:6]
+    for u, side in zip(main_speakers, roles):
+        assignments.append(
+            SpeakerSlot(debate_id=debate.id, user_id=u.id,
+                        role=side, room=room)
+        )
+    pool = pool[6:]                                # remove main speakers
+
+    # ---------- 3. FIRST WING ----------------------------------------------
+    wing_user = next((u for u in pool if is_wing(u)), None)
+    if not wing_user:
+        wing_user = next((u for u in pool if not is_first(u)), None)
+
+    if wing_user:
+        assignments.append(
+            SpeakerSlot(debate_id=debate.id, user_id=wing_user.id,
+                        role="Judge-Wing", room=room)
+        )
+        pool.remove(wing_user)
+
+    # ---------- 4. FREE SPEAKERS (max 3) -----------------------------------
+    free_speakers = pool[:3]
+    for idx, u in enumerate(free_speakers, start=1):
+        assignments.append(
+            SpeakerSlot(debate_id=debate.id, user_id=u.id,
+                        role=f"Free-{idx}", room=room)
+        )
+    pool = pool[3:]
+
+    # ---------- 5. EXTRA WINGS ---------------------------------------------
+    for u in pool:
+        assignments.append(
+            SpeakerSlot(debate_id=debate.id, user_id=u.id,
+                        role="Judge-Wing", room=room)
+        )
+
+    # ---------- COMMIT ------------------------------------------------------
+    db.session.bulk_save_objects(assignments)
     db.session.commit()
-    return True, f"Room {room}: Speaker assignment complete."
+    return True, f"Room {room}: OPD assignment complete."
+
+
+
+
+
 
 def assign_bp(debate, users):
     """
