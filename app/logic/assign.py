@@ -5,18 +5,45 @@ from collections import Counter
 
 def assign_speakers(debate, users):
     """
-    Main entry point: assigns users to speaker slots for a debate.
-    Returns (ok: bool, msg: str)
+    Dispatch to OPD or BP—and if there are enough participants,
+    split into two rooms (each one full debate) rather than
+    try to jam everyone into one room.
     """
-    if len(users) < 6:
-        return False, "Not enough participants for a debate!"
+    import random
 
     if debate.style == 'OPD':
-        return assign_opd(debate, users)
+        random.shuffle(users)
+        # OPD: split when 15+ participants
+        if len(users) >= 15:
+            mid = len(users) // 2
+            u1, u2 = users[:mid], users[mid:]
+            ok1, m1 = assign_opd_single_room(debate, u1, room=1)
+            ok2, m2 = assign_opd_single_room(debate, u2, room=2)
+            if ok1 and ok2:
+                return True, "Two OPD rooms assigned successfully."
+            return False, f"Room1: {m1} | Room2: {m2}"
+        else:
+            return assign_opd_single_room(debate, users, room=1)
+
     elif debate.style == 'BP':
-        return assign_bp(debate, users)
+        random.shuffle(users)
+        # BP: split when 16+ participants (8 per room)
+        if len(users) >= 16:
+            # take first 8+1 for room1, next 8+1 for room2 if you want 1 judge each
+            # or simply split evenly and let assign_bp handle judge count
+            mid = len(users) // 2
+            u1, u2 = users[:mid], users[mid:]
+            ok1, m1 = assign_bp_single_room(debate, u1, room=1)
+            ok2, m2 = assign_bp_single_room(debate, u2, room=2)
+            if ok1 and ok2:
+                return True, "Two BP rooms assigned successfully."
+            return False, f"Room1: {m1} | Room2: {m2}"
+        else:
+            return assign_bp_single_room(debate, users, room=1)
+
     else:
         return False, f"Unknown debate style: {debate.style}"
+
 
 def assign_opd(debate, users):
     """
@@ -36,6 +63,9 @@ def assign_opd(debate, users):
             return False, f"Room 1: {msg1} | Room 2: {msg2}"
     else:
         return assign_opd_single_room(debate, users, room=1)
+        
+def assign_bp(debate, users):
+    return assign_bp_single_room(debate, users, room=1)
 
 def assign_opd_single_room(debate, users, room=1):
     """
@@ -157,7 +187,7 @@ def assign_opd_single_room(debate, users, room=1):
     return True, f"Room {room}: OPD assignment complete."
 
 
-def assign_bp(debate, users):
+def assign_bp_single_room(debate, users, room=1):
     """
     Assigns speakers for BP format with ProAm constraint.
     1. Chair judge first (prefer 'Chair', fallback to Wing/non-First-Timer)
@@ -186,7 +216,7 @@ def assign_bp(debate, users):
         return False, "No eligible Chair judge for BP."
 
     slots = [
-        SpeakerSlot(debate_id=debate.id, user_id=chair_user.id, role="Judge-Chair", room=1)
+        SpeakerSlot(debate_id=debate.id, user_id=chair_user.id, role="Judge-Chair", room=room)
     ]
     pool.remove(chair_user)
 
@@ -219,7 +249,7 @@ def assign_bp(debate, users):
     # Now, group into 4 teams of 2, with ProAm enforced where possible
     bp_roles = ["OG", "OG", "OO", "OO", "CG", "CG", "CO", "CO"]
     for user, role in zip(speakers, bp_roles):
-        slots.append(SpeakerSlot(debate_id=debate.id, user_id=user.id, role=role, room=1))
+        slots.append(SpeakerSlot(debate_id=debate.id, user_id=user.id, role=role, room=room))
     # Remove these users from pool
     for u in speakers:
         pool.remove(u)
@@ -233,25 +263,25 @@ def assign_bp(debate, users):
     wings_assigned = 0
     for u in wings:
         if wings_assigned == 0:
-            slots.append(SpeakerSlot(debate_id=debate.id, user_id=u.id, role="Judge-Wing", room=1))
+            slots.append(SpeakerSlot(debate_id=debate.id, user_id=u.id, role="Judge-Wing", room=room))
         else:
-            slots.append(SpeakerSlot(debate_id=debate.id, user_id=u.id, role="Judge-Wing", room=1))
+            slots.append(SpeakerSlot(debate_id=debate.id, user_id=u.id, role="Judge-Wing", room=room))
         wings_assigned += 1
 
     for u in non_firsts_judge:
-        slots.append(SpeakerSlot(debate_id=debate.id, user_id=u.id, role="Judge-Wing", room=1))
+        slots.append(SpeakerSlot(debate_id=debate.id, user_id=u.id, role="Judge-Wing", room=room))
         wings_assigned += 1
         if wings_assigned >= 3:
             break
     for u in others:
         if wings_assigned >= 3:
             break
-        slots.append(SpeakerSlot(debate_id=debate.id, user_id=u.id, role="Judge-Wing", room=1))
+        slots.append(SpeakerSlot(debate_id=debate.id, user_id=u.id, role="Judge-Wing", room=room))
         wings_assigned += 1
 
     # --- Commit (guaranteeing no duplicate SpeakerSlot) ---
     for slot in slots:
-        exists = SpeakerSlot.query.filter_by(debate_id=debate.id, user_id=slot.user_id, room=1).first()
+        exists = SpeakerSlot.query.filter_by(debate_id=debate.id, user_id=slot.user_id, room=room).first()
         if not exists:
             db.session.add(slot)
     db.session.commit()
