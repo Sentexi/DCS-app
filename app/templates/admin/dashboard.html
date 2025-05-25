@@ -29,6 +29,7 @@
         <div id="collapse{{ debate.id }}" class="accordion-collapse collapse" aria-labelledby="heading{{ debate.id }}" data-bs-parent="#debateAccordion">
           <div class="accordion-body">
             <div class="mb-2">
+			  <p><strong>Voters:</strong> {{ voter_counts[debate.id] }}</p>
               <a href="{{ url_for('admin.edit_debate', debate_id=debate.id) }}" class="btn btn-sm btn-outline-primary">Edit</a>
               <form action="{{ url_for('admin.delete_debate', debate_id=debate.id) }}" method="post" style="display:inline;">
                 <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete debate?')">Delete</button>
