@@ -208,7 +208,13 @@ def run_assign(debate_id):
     from app.models import Debate, User
     debate = Debate.query.get_or_404(debate_id)
     # Option: Only assign users who registered or are eligible
-    users = User.query.all()
+    # Subquery: all topic IDs for this debate
+    topic_ids_subq = db.session.query(Topic.id).filter(Topic.debate_id == debate.id).subquery()
+
+    # Main query: all users who have a vote on one of these topics
+    users = User.query.join(Vote, User.id == Vote.user_id) \
+                      .filter(Vote.topic_id.in_(topic_ids_subq)) \
+                      .distinct().all()
 
     # Clean up previous assignments for this debate if re-running
     from app.models import SpeakerSlot
