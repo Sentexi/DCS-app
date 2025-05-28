@@ -1,7 +1,8 @@
 # app/__init__.py
-
+from datetime import datetime, timedelta
 from flask import Flask, request
 from .extensions import db, login_manager, migrate
+from .models import Debate, Topic, Vote, User
 from flask_login import current_user
 from datetime import datetime
 from flask_socketio import SocketIO
@@ -49,5 +50,37 @@ def create_app(config_file=None):
         if current_user.is_authenticated and not request.path.startswith('/static'):
             current_user.last_seen = datetime.utcnow()
             db.session.commit()
+            
+            print("Before request run!")
+            
+            # --- WebSocket live update for open debates ---
+            open_debates = Debate.query.filter_by(voting_open=True).all()
+            now = datetime.utcnow()
+            ten_minutes_ago = now - timedelta(minutes=10)
+
+            active_user_ids = set(
+                u.id for u in User.query.filter(User.last_seen >= ten_minutes_ago).all()
+            )
+            for debate in open_debates:
+                voted_user_ids = set(
+                    row[0]
+                    for row in db.session.query(Vote.user_id)
+                    .join(Topic)
+                    .filter(Topic.debate_id == debate.id)
+                    .distinct()
+                    .all()
+                )
+                eligible_user_ids = active_user_ids.union(voted_user_ids)
+                total_users = len(eligible_user_ids)
+                voted_users = len(voted_user_ids)
+
+                socketio.emit('vote_update', {
+                    'debate_id': debate.id,
+                    'vote_data': {
+                        'total_users': total_users,
+                        'voted_users': voted_users
+                    }
+                })
+            # --- End live update ---
 
     return app
