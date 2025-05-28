@@ -1,33 +1,47 @@
 {% extends "base.html" %}
 {% block title %}Speaker Assignments: {{ debate.title }}{% endblock %}
 {% block content %}
-<h2>Speaker Assignments for {{ debate.title }} ({{ debate.style }})</h2>
-{% if slots_by_room %}
-  {% for room, slots in slots_by_room.items() %}
-    <h4>Room {{ room }}</h4>
-    <table class="table table-bordered">
-      <thead>
-        <tr>
-          <th>Role</th>
-          <th>Name</th>
-          <th>Skill Level</th>
-          <th>Judge Skill</th>
-        </tr>
-      </thead>
-      <tbody>
-      {% for slot in slots %}
-        <tr>
-          <td>{{ slot.role }}</td>
-          <td>{{ user_map[slot.user_id].username }}</td>
-          <td>{{ user_map[slot.user_id].debate_skill }}</td>
-          <td>{{ user_map[slot.user_id].judge_skill }}</td>
-        </tr>
-      {% endfor %}
-      </tbody>
-    </table>
-  {% endfor %}
-{% else %}
-  <div class="alert alert-warning">No assignments available yet.</div>
-{% endif %}
-<a href="{{ url_for('main.debate_view', debate_id=debate.id) }}" class="btn btn-secondary">Back to Debate</a>
+
+<div class="container my-4">
+  <h2 class="mb-4 text-center text-md-start">
+    Speaker Assignments for {{ debate.title }} ({{ debate.style }})
+  </h2>
+
+  {% if slots_by_room %}
+    {% for room, slots in slots_by_room.items() %}
+      <h4 class="mt-4 mb-2">Room {{ room }}</h4>
+      <div class="table-responsive">
+        <table class="table table-bordered align-middle">
+          <thead class="table-light">
+            <tr>
+              <th>Role</th>
+              <th>Name</th>
+              <th>Skill Level</th>
+              <th>Judge Skill</th>
+            </tr>
+          </thead>
+          <tbody>
+          {% for slot in slots %}
+            <tr>
+              <td>{{ slot.role }}</td>
+              <td>{{ user_map[slot.user_id].username }}</td>
+              <td>{{ user_map[slot.user_id].debate_skill }}</td>
+              <td>{{ user_map[slot.user_id].judge_skill }}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% endfor %}
+  {% else %}
+    <div class="alert alert-warning mt-4">No assignments available yet.</div>
+  {% endif %}
+
+  <div class="d-flex flex-column flex-md-row gap-2 mt-4">
+    <a href="{{ url_for('main.debate_view', debate_id=debate.id) }}"
+       class="btn btn-secondary w-100 w-md-auto">
+      Back to Debate
+    </a>
+  </div>
+</div>
 {% endblock %}

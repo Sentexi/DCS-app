@@ -51,8 +51,6 @@ def create_app(config_file=None):
             current_user.last_seen = datetime.utcnow()
             db.session.commit()
             
-            print("Before request run!")
-            
             # --- WebSocket live update for open debates ---
             open_debates = Debate.query.filter_by(voting_open=True).all()
             now = datetime.utcnow()
