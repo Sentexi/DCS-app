@@ -1,4 +1,4 @@
-from app import create_app
+from app import create_app, socketio
 from app.extensions import db
 from app.models import User
 from werkzeug.security import generate_password_hash
@@ -31,4 +31,7 @@ def create_initial_admin():
 
 if __name__ == '__main__':
     create_initial_admin()
+    
+    socketio.run(app, host="0.0.0.0", port=5000)
+    
     app.run(debug=True)

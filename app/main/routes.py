@@ -4,6 +4,8 @@ from sqlalchemy.orm import joinedload
 from app.models import Debate, Topic, Vote
 from app.models import Debate, SpeakerSlot, User
 from app.extensions import db
+from app import socketio
+from datetime import datetime, timedelta
 
 
 from . import main_bp 
@@ -54,6 +56,35 @@ def debate_view(debate_id):
             vote = Vote(user_id=current_user.id, topic_id=topic_id)
             db.session.add(vote)
             db.session.commit()
+            
+            # -- live vote update start --
+            now = datetime.utcnow()
+            ten_minutes_ago = now - timedelta(minutes=10)
+
+            active_user_ids = set(
+                u.id for u in User.query.filter(User.last_seen >= ten_minutes_ago).all()
+            )
+            voted_user_ids = set(
+                row[0]
+                for row in db.session.query(Vote.user_id)
+                .join(Topic)
+                .filter(Topic.debate_id == debate_id)
+                .distinct()
+                .all()
+            )
+            eligible_user_ids = active_user_ids.union(voted_user_ids)
+            total_users = len(eligible_user_ids)
+            voted_users = len(voted_user_ids)
+
+            socketio.emit('vote_update', {
+                'debate_id': debate_id,
+                'vote_data': {
+                    'total_users': total_users,
+                    'voted_users': voted_users
+                }
+            })
+            # -- live vote update end --
+            
             flash('Your vote has been cast!', 'success')
         return redirect(url_for('main.debate_view', debate_id=debate_id))
 

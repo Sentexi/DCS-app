@@ -4,9 +4,14 @@ from flask import Flask, request
 from .extensions import db, login_manager, migrate
 from flask_login import current_user
 from datetime import datetime
+from flask_socketio import SocketIO
+
+socketio = SocketIO()  # Create the SocketIO object globally
 
 def create_app(config_file=None):
     app = Flask(__name__)
+    
+    socketio.init_app(app)
     
     # Enable a 'startswith' test in our Jinja templates
     app.jinja_env.tests['startswith'] = lambda val, prefix: (
