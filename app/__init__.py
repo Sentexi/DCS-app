@@ -1,6 +1,6 @@
 # app/__init__.py
 from datetime import datetime, timedelta
-from flask import Flask, request
+from flask import Flask, request, redirect, url_for
 from .extensions import db, login_manager, migrate
 from .models import Debate, Topic, Vote, User
 from flask_login import current_user
@@ -43,6 +43,16 @@ def create_app(config_file=None):
     app.register_blueprint(profile_bp)
     
     print(app.url_map)
+    
+    @app.before_request
+    def require_login():
+        # These endpoints do NOT require login:
+        open_routes = ['auth.login', 'auth.register', 'static']
+        # If the user is NOT authenticated and is not on a public page
+        if (not current_user.is_authenticated
+            and request.endpoint not in open_routes
+            and not (request.endpoint or '').startswith('static')):
+            return redirect(url_for('auth.login'))
     
     @app.before_request
     def update_last_seen():
