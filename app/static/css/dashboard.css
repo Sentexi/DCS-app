@@ -1,0 +1,11 @@
+.current-debate {
+  max-width: 500px;
+  margin: 1.5rem auto;
+}
+.debate-card {
+  max-width: 500px;
+  margin: 0 auto 1rem auto;
+}
+@media (min-width: 768px) {
+  .debate-card, .current-debate { max-width: 700px; }
+}

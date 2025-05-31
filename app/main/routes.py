@@ -13,14 +13,53 @@ from . import main_bp
 @main_bp.route('/')
 @login_required
 def dashboard():
+    # Redirect to survey if user hasn't filled it out
     if not current_user.date_joined_choice:
         return redirect(url_for('auth.survey'))
 
-    debates = Debate.query.all()
-    # Find open debates
-    open_debates = [debate for debate in debates if debate.voting_open]
-    single_open = open_debates[0] if len(open_debates) == 1 else None
-    return render_template('main/dashboard.html', debates=debates, single_open=single_open)
+    # Get all debates, newest first
+    debates = Debate.query.order_by(Debate.id.desc()).all()
+    open_debates = [d for d in debates if d.voting_open]
+    current_debate = open_debates[0] if len(open_debates) == 1 else None
+
+    # Initialize vote statistics and user role
+    vote_percent = votes_cast = votes_total = user_role = None
+
+    if current_debate:
+        # Get topic IDs for this debate
+        topic_ids = [t.id for t in current_debate.topics]
+        # Get all votes for these topics
+        votes = Vote.query.filter(Vote.topic_id.in_(topic_ids)).all()
+        voter_ids = set(v.user_id for v in votes)
+        votes_cast = len(voter_ids)
+
+        # Count all registered users (update if you want a different base)
+        votes_total = User.query.count()
+        vote_percent = int((votes_cast / votes_total) * 100) if votes_total else 0
+
+        # Find this user's speaker role (if assigned)
+        slot = SpeakerSlot.query.filter_by(debate_id=current_debate.id, user_id=current_user.id).first()
+        if slot:
+            user_role = f"{slot.role} in Room {slot.room}" if slot.room else slot.role
+
+    # Categorize debates for UI tabs or display
+    active_debates = [d for d in debates if d.voting_open and (not current_debate or d.id != current_debate.id)]
+    past_debates = [d for d in debates if not d.voting_open and d.assignment_complete]
+    upcoming_debates = [d for d in debates if not d.voting_open and not d.assignment_complete]
+
+    return render_template(
+        'main/dashboard.html',
+        current_debate=current_debate,
+        vote_percent=vote_percent,
+        votes_cast=votes_cast,
+        votes_total=votes_total,
+        user_role=user_role,
+        active_debates=active_debates,
+        past_debates=past_debates,
+        upcoming_debates=upcoming_debates,
+        debates=debates,
+        single_open=current_debate,
+    )
 
 
 @main_bp.route('/debate/<int:debate_id>', methods=['GET', 'POST'])

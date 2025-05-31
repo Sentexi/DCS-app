@@ -1,26 +1,116 @@
 {% extends "base.html" %}
-{% block title %}Debate Dashboard{% endblock %}
+{% block title %}Dashboard{% endblock %}
+
+{% block extra_head %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+{% endblock %}
 
 {% block content %}
-<h2>Active Debates</h2>
-{% if single_open %}
-<div class="alert alert-primary">
-  <strong>Current debate open for voting:</strong>
-  <a href="{{ url_for('main.debate_view', debate_id=single_open.id) }}" class="alert-link">
-      {{ single_open.title }} ({{ single_open.style }})
-  </a>
-</div>
-{% endif %}
-<ul>
-  {% for debate in debates %}
-    <li>
-      <a href="{{ url_for('main.debate_view', debate_id=debate.id) }}">
-        {{ debate.title }} ({{ debate.style }})
-      </a>
+<div class="container my-4">
+
+  <!-- Welcome Banner -->
+  <div class="mb-4 text-center">
+    <h2>Welcome, {{ current_user.username }}!</h2>
+  </div>
+
+  <!-- Current Debate Card -->
+  <div class="card shadow current-debate mb-4">
+    <div class="card-body">
+      <h4 class="card-title d-flex justify-content-between align-items-center">
+        {{ current_debate.title or 'No debate right now' }}
+        {% if current_debate.style %}
+          <span class="badge bg-info">{{ current_debate.style }}</span>
+        {% endif %}
+      </h4>
+      {% if current_debate %}
+      <div class="progress my-2" style="height: 1.25rem;">
+        <div class="progress-bar bg-success"
+             style="width: {{ vote_percent or 0 }}%;"
+             aria-valuenow="{{ vote_percent or 0 }}" aria-valuemin="0" aria-valuemax="100">
+          {{ votes_cast or 0 }}/{{ votes_total or 0 }}
+        </div>
+      </div>
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <small class="text-muted">{{ votes_cast or 0 }}/{{ votes_total or 0 }} have voted</small>
+        <small class="text-muted">{{ vote_percent or 0 }}%</small>
+      </div>
+      {% if user_role %}
+        <p class="mt-2 fw-bold text-primary">You are {{ user_role }}</p>
+      {% endif %}
+      <div class="d-grid gap-2 mt-3">
+        <a href="{{ url_for('main.debate_view', debate_id=current_debate.id) }}"
+           class="btn btn-primary">Vote Now</a>
+        {% if current_debate.assignment_complete %}
+          <a href="{{ url_for('main.debate_graphic', debate_id=current_debate.id) }}"
+             class="btn btn-outline-secondary">View Speakers</a>
+        {% endif %}
+      </div>
+      {% else %}
+        <p class="text-muted">No active debate at the moment.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Section Tabs -->
+  <ul class="nav nav-pills mb-3 justify-content-center" id="debateTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+      <button class="nav-link active" id="active-tab" data-bs-toggle="pill"
+        data-bs-target="#active" type="button" role="tab">Active</button>
     </li>
-  {% else %}
-    <li>No debates found.</li>
-  {% endfor %}
-</ul>
-<a href="{{ url_for('auth.logout') }}">Logout</a>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="past-tab" data-bs-toggle="pill"
+        data-bs-target="#past" type="button" role="tab">Past</button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="upcoming-tab" data-bs-toggle="pill"
+        data-bs-target="#upcoming" type="button" role="tab">Upcoming</button>
+    </li>
+  </ul>
+
+  <!-- Debate Cards (Dummy values) -->
+  <div class="tab-content">
+    <div class="tab-pane fade show active" id="active" role="tabpanel">
+      {% for d in active_debates %}
+        <div class="card debate-card mb-3">
+          <div class="card-body">
+            <h6 class="card-title">{{ d.title }}</h6>
+            <span class="badge bg-info">{{ d.style }}</span>
+            <a href="{{ url_for('main.debate_view', debate_id=d.id) }}"
+              class="stretched-link"></a>
+          </div>
+        </div>
+      {% else %}
+        <div class="text-center text-muted my-4">No other active debates.</div>
+      {% endfor %}
+    </div>
+    <div class="tab-pane fade" id="past" role="tabpanel">
+      {% for d in past_debates %}
+        <div class="card debate-card mb-3">
+          <div class="card-body">
+            <h6 class="card-title">{{ d.title }}</h6>
+            <span class="badge bg-secondary">{{ d.style }}</span>
+            <a href="{{ url_for('main.debate_view', debate_id=d.id) }}"
+              class="stretched-link"></a>
+          </div>
+        </div>
+      {% else %}
+        <div class="text-center text-muted my-4">No past debates.</div>
+      {% endfor %}
+    </div>
+    <div class="tab-pane fade" id="upcoming" role="tabpanel">
+      {% for d in upcoming_debates %}
+        <div class="card debate-card mb-3">
+          <div class="card-body">
+            <h6 class="card-title">{{ d.title }}</h6>
+            <span class="badge bg-warning text-dark">{{ d.style }}</span>
+            <a href="{{ url_for('main.debate_view', debate_id=d.id) }}"
+              class="stretched-link"></a>
+          </div>
+        </div>
+      {% else %}
+        <div class="text-center text-muted my-4">No upcoming debates.</div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
 {% endblock %}
