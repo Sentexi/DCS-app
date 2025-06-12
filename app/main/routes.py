@@ -33,8 +33,15 @@ def dashboard():
         voter_ids = set(v.user_id for v in votes)
         votes_cast = len(voter_ids)
 
-        # Count all registered users (update if you want a different base)
-        votes_total = User.query.count()
+        now = datetime.utcnow()
+        ten_minutes_ago = now - timedelta(minutes=10)
+
+        # Count only users who are recently active or have voted
+        active_user_ids = set(
+            u.id for u in User.query.filter(User.last_seen >= ten_minutes_ago).all()
+        )
+        eligible_user_ids = active_user_ids.union(voter_ids)
+        votes_total = len(eligible_user_ids)
         vote_percent = int((votes_cast / votes_total) * 100) if votes_total else 0
 
         # Find this user's speaker role (if assigned)
