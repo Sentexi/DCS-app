@@ -15,7 +15,7 @@
     </tbody>
   </table>
   <p id="rank-warning" class="text-danger d-none">Each rank must be used once.</p>
-  <button type="submit" class="btn btn-primary">Save</button>
+  <button id="save-btn" type="submit" class="btn btn-primary">Save</button>
 </form>
 {% endblock %}
 {% block extra_js %}
@@ -25,6 +25,7 @@ function check() {
   const used = vals.filter(v=>v);
   const ok = new Set(used).size===4 && used.length===4;
   document.getElementById('rank-warning').classList.toggle('d-none', ok);
+  document.getElementById('save-btn').disabled = !ok;
 }
 document.querySelectorAll('.rank-input').forEach(i=>i.addEventListener('input', check));
 check();
