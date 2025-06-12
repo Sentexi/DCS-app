@@ -249,6 +249,13 @@ def dynamic_plan(debate_id):
 
     total = len(users)
     chair_count = sum(1 for u in users if u.judge_skill == 'Chair')
+    def eligible_chair(u):
+        if getattr(u, 'judge_skill', '') == 'Chair':
+            return True
+        if getattr(u, 'judge_skill', '') == 'Wing' and getattr(u, 'debate_skill', '') != 'First Timer':
+            return True
+        return getattr(u, 'debate_skill', '') != 'First Timer'
+    fallback_chair_count = sum(1 for u in users if eligible_chair(u))
 
     scenario_defs = {
         'opd_bp': [('OPD', 7, 12), ('BP', 9, 11)],
@@ -264,8 +271,14 @@ def dynamic_plan(debate_id):
     scenarios = []
     for key, spec in scenario_defs.items():
         counts = _compute_room_counts(total, [(s[1], s[2]) for s in spec])
-        if counts and chair_count >= len(spec):
-            scenarios.append({'id': key, 'desc': descriptions[key]})
+        if not counts:
+            continue
+        safe = chair_count >= len(spec)
+        if safe or fallback_chair_count >= len(spec):
+            desc = descriptions[key]
+            if not safe:
+                desc += ' (unsafe - using fallback Chairs)'
+            scenarios.append({'id': key, 'desc': desc, 'safe': safe})
 
     return render_template('admin/dynamic_plan.html',
                            debate=debate,

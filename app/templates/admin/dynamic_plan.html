@@ -19,6 +19,7 @@
       <input class="form-check-input" type="radio" name="scenario" id="sc{{ loop.index }}" value="{{ sc.id }}" {% if loop.first %}checked{% endif %}>
       <label class="form-check-label" for="sc{{ loop.index }}">
         {{ sc.desc }}
+        {% if not sc.safe %}<span class="badge bg-warning text-dark ms-2">Unsafe</span>{% endif %}
       </label>
     </div>
     {% endfor %}
