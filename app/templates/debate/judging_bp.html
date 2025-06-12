@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}BP Ranking - {{ debate.title }}{% endblock %}
+{% block content %}
+<h2 class="mb-4">{{ debate.title }} – Rankings</h2>
+<form method="post">
+  <table class="table table-bordered w-auto">
+    <thead><tr><th>Team</th><th>Rank (1-4)</th></tr></thead>
+    <tbody>
+      {% for t in ['OG','OO','CG','CO'] %}
+      <tr>
+        <td>{{ t }}</td>
+        <td><input type="number" name="rank_{{ t }}" class="form-control rank-input" min="1" max="4" value="{{ existing.get(t, '') }}"></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <p id="rank-warning" class="text-danger d-none">Each rank must be used once.</p>
+  <button type="submit" class="btn btn-primary">Save</button>
+</form>
+{% endblock %}
+{% block extra_js %}
+<script>
+function check() {
+  const vals = Array.from(document.querySelectorAll('.rank-input')).map(i=>i.value);
+  const used = vals.filter(v=>v);
+  const ok = new Set(used).size===4 && used.length===4;
+  document.getElementById('rank-warning').classList.toggle('d-none', ok);
+}
+document.querySelectorAll('.rank-input').forEach(i=>i.addEventListener('input', check));
+check();
+</script>
+{% endblock %}

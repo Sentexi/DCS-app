@@ -41,5 +41,9 @@
     <a href="{{ url_for('main.debate_graphic', debate_id=debate.id) }}" class="btn btn-primary mt-3">
         View Speaker Positions
     </a>
+    {% set my_slot = current_user.get_slot_for_debate(debate.id) %}
+    {% if my_slot and my_slot.role == 'Judge-Chair' %}
+      <a href="{{ url_for('debate.judging', debate_id=debate.id) }}" class="btn btn-warning mt-3">Judging</a>
+    {% endif %}
 {% endif %}
 {% endblock %}

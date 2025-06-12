@@ -132,3 +132,24 @@ class SpeakerSlot(db.Model):
     room = db.Column(db.Integer, default=1)            # For split debates (1 or 2)
     # Ensure each user is only assigned once per debate per room
     __table_args__ = (db.UniqueConstraint('debate_id', 'user_id', 'room', name='_debate_user_room_uc'),)
+
+
+class Score(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    debate_id = db.Column(db.Integer, db.ForeignKey('debate.id'), nullable=False)
+    speaker_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    judge_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    value = db.Column(db.Integer, nullable=False)
+    __table_args__ = (
+        db.UniqueConstraint('debate_id', 'speaker_id', 'judge_id', name='score_unique'),
+    )
+
+
+class BpRank(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    debate_id = db.Column(db.Integer, db.ForeignKey('debate.id'), nullable=False)
+    team = db.Column(db.String(8), nullable=False)
+    rank = db.Column(db.Integer, nullable=False)
+    __table_args__ = (
+        db.UniqueConstraint('debate_id', 'team', name='bp_rank_unique'),
+    )
