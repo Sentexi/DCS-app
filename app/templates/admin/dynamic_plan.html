@@ -3,7 +3,7 @@
 {% block content %}
 <div class="container my-4">
   <h2 class="mb-3">Dynamic Plan for {{ debate.title }}</h2>
-  <h4>Active Participants Grouped by Skill</h4>
+  <h4>Participants Grouped by Skill</h4>
   <ul>
   {% for skill, users in groups.items() %}
     <li><strong>{{ skill }} ({{ users|length }})</strong>: 
@@ -12,17 +12,21 @@
   {% endfor %}
   </ul>
   <h4 class="mt-4">Possible Scenarios</h4>
-  <ul>
-  {% for sc in scenarios %}
-    <li>
-      {% if sc.type == 'Mixed' %}
-        {{ sc.rooms_opd }} OPD rooms and {{ sc.rooms_bp }} BP rooms
-      {% else %}
-        {{ sc.rooms }} {{ sc.type }} rooms
-      {% endif %}
-    </li>
-  {% endfor %}
-  </ul>
+  {% if scenarios %}
+  <form method="post" action="{{ url_for('admin.run_assign', debate_id=debate.id) }}">
+    {% for sc in scenarios %}
+    <div class="form-check">
+      <input class="form-check-input" type="radio" name="scenario" id="sc{{ loop.index }}" value="{{ sc.id }}" {% if loop.first %}checked{% endif %}>
+      <label class="form-check-label" for="sc{{ loop.index }}">
+        {{ sc.desc }}
+      </label>
+    </div>
+    {% endfor %}
+    <button type="submit" class="btn btn-primary mt-3">Assign Speakers</button>
+  </form>
+  {% else %}
+    <p>No valid scenarios for current participant count.</p>
+  {% endif %}
   <a href="{{ url_for('admin.admin_dashboard') }}" class="btn btn-secondary mt-3">Back</a>
 </div>
 {% endblock %}

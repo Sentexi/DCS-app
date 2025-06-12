@@ -3,7 +3,36 @@ from app.models import SpeakerSlot, User, Debate
 from app.extensions import db
 from collections import Counter
 
-def assign_speakers(debate, users, max_rooms=2):
+
+def _compute_room_counts(total, settings):
+    """Compute participant counts per room based on min/max settings.
+
+    settings is a list of tuples (min_count, max_count).
+    Returns a list of counts or None if total cannot fit within bounds.
+    """
+    mins = [m for m, _ in settings]
+    maxs = [M for _, M in settings]
+
+    numbers = mins[:]
+    remaining = total - sum(numbers)
+    if remaining < 0:
+        return None
+    capacity = sum(M - m for m, M in settings)
+    if remaining > capacity:
+        return None
+
+    for i in range(len(settings)):
+        if remaining <= 0:
+            break
+        add = min(maxs[i] - numbers[i], remaining)
+        numbers[i] += add
+        remaining -= add
+
+    if remaining != 0:
+        return None
+    return numbers
+
+def assign_speakers(debate, users, max_rooms=2, scenario=None):
     """
     Dispatch to OPD or BP, splitting into at most max_rooms rooms,
     and always using the fewest rooms needed.
@@ -20,7 +49,7 @@ def assign_speakers(debate, users, max_rooms=2):
         split_threshold = 18
         helper = assign_bp_single_room
     elif debate.style == "Dynamic":
-        return assign_dynamic(debate, users)
+        return assign_dynamic(debate, users, scenario=scenario)
     else:
         return False, f"Unknown debate style: {debate.style}"
 
@@ -280,16 +309,62 @@ def assign_bp_single_room(debate, users, room=1):
     return True, "BP speaker assignment complete."
 
 
-def assign_dynamic(debate, users):
-    """Very simple dynamic assignment heuristic.
-    Chooses OPD for small groups and BP for larger ones."""
-    if len(users) <= 7:
-        return assign_opd_single_room(debate, users, room=1)
-    elif len(users) <= 9:
-        return assign_bp_single_room(debate, users, room=1)
-    else:
-        mid = len(users) // 2
-        ok1, msg1 = assign_opd_single_room(debate, users[:mid], room=1)
-        ok2, msg2 = assign_bp_single_room(debate, users[mid:], room=2)
-        return ok1 and ok2, f"Dynamic: {msg1}; {msg2}"
+def assign_dynamic(debate, users, scenario=None):
+    """Assign speakers for the Dynamic style using a selected scenario."""
+    if not scenario:
+        # Fallback to old heuristic if no scenario provided
+        if len(users) <= 7:
+            return assign_opd_single_room(debate, users, room=1)
+        elif len(users) <= 9:
+            return assign_bp_single_room(debate, users, room=1)
+        else:
+            mid = len(users) // 2
+            ok1, msg1 = assign_opd_single_room(debate, users[:mid], room=1)
+            ok2, msg2 = assign_bp_single_room(debate, users[mid:], room=2)
+            return ok1 and ok2, f"Dynamic: {msg1}; {msg2}"
+
+    scenarios = {
+        'opd_bp': [('OPD', 7, 12), ('BP', 9, 11)],
+        'opd_opd': [('OPD', 7, 12), ('OPD', 7, 12)],
+        'bp_bp': [('BP', 9, 11), ('BP', 9, 11)],
+    }
+
+    settings = scenarios.get(scenario)
+    if not settings:
+        return False, "Unknown scenario"
+
+    counts = _compute_room_counts(len(users), [(s[1], s[2]) for s in settings])
+    if counts is None:
+        return False, "Participant count doesn't fit the selected scenario"
+
+    chairs = [u for u in users if getattr(u, 'judge_skill', '') == 'Chair']
+    if len(chairs) < len(settings):
+        return False, "Not enough Chair judges for the selected scenario"
+
+    random.shuffle(chairs)
+    selected_chairs = chairs[:len(settings)]
+    rooms = [[c] for c in selected_chairs]
+    remaining = [u for u in users if u not in selected_chairs]
+    random.shuffle(remaining)
+
+    for idx, count in enumerate(counts):
+        need = count - 1  # one chair already placed
+        rooms[idx].extend(remaining[:need])
+        remaining = remaining[need:]
+
+    messages = []
+    success = True
+    for i, (room_users, spec) in enumerate(zip(rooms, settings), start=1):
+        if spec[0] == 'OPD':
+            ok, msg = assign_opd_single_room(debate, room_users, room=i)
+        else:
+            ok, msg = assign_bp_single_room(debate, room_users, room=i)
+        success = success and ok
+        messages.append(msg)
+
+    if remaining:
+        success = False
+        messages.append('Unassigned participants remain')
+
+    return success, ' | '.join(messages)
 

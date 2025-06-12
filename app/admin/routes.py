@@ -3,7 +3,7 @@ from flask_login import login_required, current_user
 from sqlalchemy import distinct
 from app.models import Debate, Topic, Vote, User
 from app.extensions import db
-from app.logic.assign import assign_speakers
+from app.logic.assign import assign_speakers, _compute_room_counts
 from datetime import datetime, timedelta
 
 from . import admin_bp
@@ -221,7 +221,8 @@ def run_assign(debate_id):
     SpeakerSlot.query.filter_by(debate_id=debate.id).delete()
     db.session.commit()
 
-    ok, msg = assign_speakers(debate, users)
+    scenario = request.form.get('scenario')
+    ok, msg = assign_speakers(debate, users, scenario=scenario)
     flash(msg, "success" if ok else "danger")
     return redirect(url_for('admin.admin_dashboard'))
 
@@ -232,26 +233,39 @@ def run_assign(debate_id):
 @admin_required
 def dynamic_plan(debate_id):
     debate = Debate.query.get_or_404(debate_id)
-    now = datetime.utcnow()
-    ten_minutes_ago = now - timedelta(minutes=10)
+    if debate.voting_open:
+        flash('Voting must be closed before planning rooms.', 'warning')
+        return redirect(url_for('admin.admin_dashboard'))
 
-    active_users = User.query.filter(User.last_seen >= ten_minutes_ago).all()
+    topic_ids_subq = db.session.query(Topic.id).filter(Topic.debate_id == debate.id).subquery()
+    users = User.query.join(Vote, User.id == Vote.user_id) \
+                      .filter(Vote.topic_id.in_(topic_ids_subq)) \
+                      .distinct().all()
 
     groups = {}
-    for u in active_users:
+    for u in users:
         skill = u.debate_skill or 'Unknown'
         groups.setdefault(skill, []).append(u)
 
-    total = len(active_users)
+    total = len(users)
+    chair_count = sum(1 for u in users if u.judge_skill == 'Chair')
+
+    scenario_defs = {
+        'opd_bp': [('OPD', 7, 12), ('BP', 9, 11)],
+        'opd_opd': [('OPD', 7, 12), ('OPD', 7, 12)],
+        'bp_bp': [('BP', 9, 11), ('BP', 9, 11)],
+    }
+    descriptions = {
+        'opd_bp': '1 OPD room and 1 BP room',
+        'opd_opd': 'Two OPD rooms',
+        'bp_bp': 'Two BP rooms',
+    }
+
     scenarios = []
-    opd_rooms = total // 7
-    scenarios.append({'type': 'OPD', 'rooms': opd_rooms})
-    bp_rooms = total // 9
-    scenarios.append({'type': 'BP', 'rooms': bp_rooms})
-    mix_opd = total // 7
-    remaining = total - mix_opd * 7
-    mix_bp = remaining // 9
-    scenarios.append({'type': 'Mixed', 'rooms_opd': mix_opd, 'rooms_bp': mix_bp})
+    for key, spec in scenario_defs.items():
+        counts = _compute_room_counts(total, [(s[1], s[2]) for s in spec])
+        if counts and chair_count >= len(spec):
+            scenarios.append({'id': key, 'desc': descriptions[key]})
 
     return render_template('admin/dynamic_plan.html',
                            debate=debate,
