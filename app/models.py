@@ -60,7 +60,10 @@ class User(UserMixin, db.Model):
 class Debate(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(140), nullable=False)
-    style = db.Column(db.Enum('OPD', 'BP', name='debate_style'), nullable=False)
+    style = db.Column(
+        db.Enum('OPD', 'BP', 'Dynamic', name='debate_style'),
+        nullable=False
+    )
     voting_open = db.Column(db.Boolean, default=True)
 
     # Relationship: which topics belong to this debate?
