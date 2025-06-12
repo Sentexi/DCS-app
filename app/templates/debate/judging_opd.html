@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Judging - {{ debate.title }}{% endblock %}
+{% block content %}
+<h2 class="mb-4">{{ debate.title }} – Scoring</h2>
+<form method="post">
+  <table class="table table-bordered">
+    <thead>
+      <tr>
+        <th>Speaker</th>
+        {% for j in judges %}
+          <th>{{ j.user.username }}</th>
+        {% endfor %}
+        <th>Average</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for sp in speakers %}
+      <tr data-role="{{ sp.role }}" data-sid="{{ sp.id }}">
+        <td>{{ sp.user.username }} <small class="text-muted">({{ sp.role }})</small></td>
+        {% for j in judges %}
+          <td><input type="number" min="0" max="100" step="1" name="score_{{ sp.id }}_{{ j.id }}" class="form-control score-input" value="{{ scores.get((sp.user_id, j.user_id), '') }}"></td>
+        {% endfor %}
+        <td class="avg">0</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <p><strong>Government:</strong> <span id="gov-total">0</span></p>
+  <p><strong>Opposition:</strong> <span id="opp-total">0</span></p>
+  <button type="submit" class="btn btn-primary">Save</button>
+</form>
+{% endblock %}
+{% block extra_js %}
+<script>
+function update() {
+  let gov=0, opp=0;
+  document.querySelectorAll('tbody tr').forEach(row=>{
+    let sum=0,count=0;
+    row.querySelectorAll('.score-input').forEach(inp=>{
+      const v=parseFloat(inp.value); if(!isNaN(v)){sum+=v;count++;}
+    });
+    const avg = count?sum/count:0;
+    row.querySelector('.avg').textContent=avg.toFixed(1);
+    if(row.dataset.role.startsWith('Gov')) gov+=avg;
+    else if(row.dataset.role.startsWith('Opp')) opp+=avg;
+  });
+  document.getElementById('gov-total').textContent=gov.toFixed(1);
+  document.getElementById('opp-total').textContent=opp.toFixed(1);
+}
+update();
+document.querySelectorAll('.score-input').forEach(inp=>inp.addEventListener('input', update));
+</script>
+{% endblock %}
