@@ -6,6 +6,10 @@
 {% endblock %}
 
 {% block content %}
+<script>
+  window.currentDebateId = {{ current_debate.id if current_debate else 'null' }};
+</script>
+
 <div class="container my-4">
 
   <!-- Welcome Banner -->
@@ -113,4 +117,8 @@
     </div>
   </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
 {% endblock %}
