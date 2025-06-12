@@ -337,15 +337,32 @@ def assign_dynamic(debate, users, scenario=None):
     if counts is None:
         return False, "Participant count doesn't fit the selected scenario"
 
-    chairs = [u for u in users if getattr(u, 'judge_skill', '') == 'Chair']
-    if len(chairs) < len(settings):
-        return False, "Not enough Chair judges for the selected scenario"
+    def eligible_chair(u):
+        if getattr(u, 'judge_skill', '') == 'Chair':
+            return True
+        if getattr(u, 'judge_skill', '') == 'Wing' and getattr(u, 'debate_skill', '') != 'First Timer':
+            return True
+        return getattr(u, 'debate_skill', '') != 'First Timer'
 
-    random.shuffle(chairs)
-    selected_chairs = chairs[:len(settings)]
-    rooms = [[c] for c in selected_chairs]
-    remaining = [u for u in users if u not in selected_chairs]
-    random.shuffle(remaining)
+    pool = list(users)
+    random.shuffle(pool)
+    rooms = []
+    unsafe = False
+    for _ in settings:
+        chair_user = next((u for u in pool if getattr(u, 'judge_skill', '') == 'Chair'), None)
+        if not chair_user:
+            chair_user = next((u for u in pool if getattr(u, 'judge_skill', '') == 'Wing' and getattr(u, 'debate_skill', '') != 'First Timer'), None)
+            if not chair_user:
+                chair_user = next((u for u in pool if getattr(u, 'debate_skill', '') != 'First Timer'), None)
+                if not chair_user:
+                    return False, "No eligible Chair judge for one of the rooms"
+                unsafe = True
+            else:
+                unsafe = True
+        rooms.append([chair_user])
+        pool.remove(chair_user)
+
+    remaining = pool
 
     for idx, count in enumerate(counts):
         need = count - 1  # one chair already placed
@@ -365,6 +382,9 @@ def assign_dynamic(debate, users, scenario=None):
     if remaining:
         success = False
         messages.append('Unassigned participants remain')
+
+    if unsafe:
+        messages.append('Fallback Chairs were used')
 
     return success, ' | '.join(messages)
 
