@@ -1,6 +1,7 @@
 from flask import render_template, redirect, url_for, flash, request, jsonify
 from flask_login import login_required, current_user
 from sqlalchemy import distinct
+import itertools
 from app.models import Debate, Topic, Vote, User
 from app.extensions import db
 from app.logic.assign import assign_speakers, _compute_room_counts
@@ -257,28 +258,49 @@ def dynamic_plan(debate_id):
         return getattr(u, 'debate_skill', '') != 'First Timer'
     fallback_chair_count = sum(1 for u in users if eligible_chair(u))
 
-    scenario_defs = {
-        'opd_bp': [('OPD', 7, 12), ('BP', 9, 11)],
-        'opd_opd': [('OPD', 7, 12), ('OPD', 7, 12)],
-        'bp_bp': [('BP', 9, 11), ('BP', 9, 11)],
-    }
-    descriptions = {
-        'opd_bp': '1 OPD room and 1 BP room',
-        'opd_opd': 'Two OPD rooms',
-        'bp_bp': 'Two BP rooms',
-    }
-
     scenarios = []
-    for key, spec in scenario_defs.items():
-        counts = _compute_room_counts(total, [(s[1], s[2]) for s in spec])
-        if not counts:
-            continue
-        safe = chair_count >= len(spec)
-        if safe or fallback_chair_count >= len(spec):
-            desc = descriptions[key]
+    room_types = {'O': ('OPD', 7, 12), 'B': ('BP', 9, 11)}
+
+    max_rooms = min(5, total // 7) if total else 1
+
+    def opd_breakdown(n):
+        extra = max(n - 7, 0)
+        wing = 1 if extra > 0 else 0
+        free = min(max(n - 8, 0), 3)
+        speakers = 6 + free
+        judges = n - speakers
+        return f'{speakers} speakers, {judges} judges'
+
+    def bp_breakdown(n):
+        wings = min(max(n - 9, 0), 3)
+        speakers = 8
+        judges = 1 + wings
+        return f'{speakers} speakers, {judges} judges'
+
+    for num_rooms in range(1, max_rooms + 1):
+        for combo in itertools.product('OB', repeat=num_rooms):
+            spec = [room_types[c] for c in combo]
+            counts = _compute_room_counts(total, [(s[1], s[2]) for s in spec])
+            if not counts:
+                continue
+            safe = chair_count >= num_rooms
+            if not safe and fallback_chair_count < num_rooms:
+                continue
+            desc = ' + '.join(room_types[c][0] for c in combo)
             if not safe:
                 desc += ' (unsafe - using fallback Chairs)'
-            scenarios.append({'id': key, 'desc': desc, 'safe': safe})
+            breakdown = []
+            for c, count in zip(combo, counts):
+                if c == 'O':
+                    breakdown.append(opd_breakdown(count))
+                else:
+                    breakdown.append(bp_breakdown(count))
+            scenarios.append({
+                'id': '-'.join(c for c in combo),
+                'desc': desc,
+                'safe': safe,
+                'breakdown': breakdown
+            })
 
     return render_template('admin/dynamic_plan.html',
                            debate=debate,

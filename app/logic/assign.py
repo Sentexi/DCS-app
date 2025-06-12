@@ -323,14 +323,11 @@ def assign_dynamic(debate, users, scenario=None):
             ok2, msg2 = assign_bp_single_room(debate, users[mid:], room=2)
             return ok1 and ok2, f"Dynamic: {msg1}; {msg2}"
 
-    scenarios = {
-        'opd_bp': [('OPD', 7, 12), ('BP', 9, 11)],
-        'opd_opd': [('OPD', 7, 12), ('OPD', 7, 12)],
-        'bp_bp': [('BP', 9, 11), ('BP', 9, 11)],
-    }
-
-    settings = scenarios.get(scenario)
-    if not settings:
+    room_types = {'O': ('OPD', 7, 12), 'B': ('BP', 9, 11)}
+    letters = scenario.split('-')
+    try:
+        settings = [room_types[c.upper()] for c in letters]
+    except KeyError:
         return False, "Unknown scenario"
 
     counts = _compute_room_counts(len(users), [(s[1], s[2]) for s in settings])

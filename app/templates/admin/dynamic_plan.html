@@ -21,6 +21,11 @@
         {{ sc.desc }}
         {% if not sc.safe %}<span class="badge bg-warning text-dark ms-2">Unsafe</span>{% endif %}
       </label>
+      <ul class="ms-4">
+        {% for item in sc.breakdown %}
+          <li>Room {{ loop.index }}: {{ item }}</li>
+        {% endfor %}
+      </ul>
     </div>
     {% endfor %}
     <button type="submit" class="btn btn-primary mt-3">Assign Speakers</button>
