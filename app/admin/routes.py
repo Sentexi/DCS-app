@@ -50,7 +50,7 @@ def create_debate():
     if request.method == 'POST':
         title = request.form['title']
         style = request.form['style']
-        if not title or style not in ['OPD', 'BP']:
+        if not title or style not in ['OPD', 'BP', 'Dynamic']:
             flash('Please fill all fields correctly.', 'danger')
             return redirect(url_for('admin.create_debate'))
         debate = Debate(title=title, style=style)
@@ -132,7 +132,7 @@ def edit_debate(debate_id):
     if request.method == 'POST':
         title = request.form['title']
         style = request.form['style']
-        if title and style in ['OPD', 'BP']:
+        if title and style in ['OPD', 'BP', 'Dynamic']:
             debate.title = title
             debate.style = style
             db.session.commit()
@@ -224,5 +224,38 @@ def run_assign(debate_id):
     ok, msg = assign_speakers(debate, users)
     flash(msg, "success" if ok else "danger")
     return redirect(url_for('admin.admin_dashboard'))
+
+
+# Display dynamic planning for a Dynamic debate
+@admin_bp.route('/admin/<int:debate_id>/dynamic_plan')
+@login_required
+@admin_required
+def dynamic_plan(debate_id):
+    debate = Debate.query.get_or_404(debate_id)
+    now = datetime.utcnow()
+    ten_minutes_ago = now - timedelta(minutes=10)
+
+    active_users = User.query.filter(User.last_seen >= ten_minutes_ago).all()
+
+    groups = {}
+    for u in active_users:
+        skill = u.debate_skill or 'Unknown'
+        groups.setdefault(skill, []).append(u)
+
+    total = len(active_users)
+    scenarios = []
+    opd_rooms = total // 7
+    scenarios.append({'type': 'OPD', 'rooms': opd_rooms})
+    bp_rooms = total // 9
+    scenarios.append({'type': 'BP', 'rooms': bp_rooms})
+    mix_opd = total // 7
+    remaining = total - mix_opd * 7
+    mix_bp = remaining // 9
+    scenarios.append({'type': 'Mixed', 'rooms_opd': mix_opd, 'rooms_bp': mix_bp})
+
+    return render_template('admin/dynamic_plan.html',
+                           debate=debate,
+                           groups=groups,
+                           scenarios=scenarios)
 
 

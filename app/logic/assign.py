@@ -19,6 +19,8 @@ def assign_speakers(debate, users, max_rooms=2):
     elif debate.style == "BP":
         split_threshold = 18
         helper = assign_bp_single_room
+    elif debate.style == "Dynamic":
+        return assign_dynamic(debate, users)
     else:
         return False, f"Unknown debate style: {debate.style}"
 
@@ -276,4 +278,18 @@ def assign_bp_single_room(debate, users, room=1):
             db.session.add(slot)
     db.session.commit()
     return True, "BP speaker assignment complete."
+
+
+def assign_dynamic(debate, users):
+    """Very simple dynamic assignment heuristic.
+    Chooses OPD for small groups and BP for larger ones."""
+    if len(users) <= 7:
+        return assign_opd_single_room(debate, users, room=1)
+    elif len(users) <= 9:
+        return assign_bp_single_room(debate, users, room=1)
+    else:
+        mid = len(users) // 2
+        ok1, msg1 = assign_opd_single_room(debate, users[:mid], room=1)
+        ok2, msg2 = assign_bp_single_room(debate, users[mid:], room=2)
+        return ok1 and ok2, f"Dynamic: {msg1}; {msg2}"
 

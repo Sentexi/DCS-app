@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Dynamic Plan{% endblock %}
+{% block content %}
+<div class="container my-4">
+  <h2 class="mb-3">Dynamic Plan for {{ debate.title }}</h2>
+  <h4>Active Participants Grouped by Skill</h4>
+  <ul>
+  {% for skill, users in groups.items() %}
+    <li><strong>{{ skill }} ({{ users|length }})</strong>: 
+        {% for u in users %}{{ u.username }}{% if not loop.last %}, {% endif %}{% endfor %}
+    </li>
+  {% endfor %}
+  </ul>
+  <h4 class="mt-4">Possible Scenarios</h4>
+  <ul>
+  {% for sc in scenarios %}
+    <li>
+      {% if sc.type == 'Mixed' %}
+        {{ sc.rooms_opd }} OPD rooms and {{ sc.rooms_bp }} BP rooms
+      {% else %}
+        {{ sc.rooms }} {{ sc.type }} rooms
+      {% endif %}
+    </li>
+  {% endfor %}
+  </ul>
+  <a href="{{ url_for('admin.admin_dashboard') }}" class="btn btn-secondary mt-3">Back</a>
+</div>
+{% endblock %}
