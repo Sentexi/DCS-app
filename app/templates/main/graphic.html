@@ -6,6 +6,7 @@
 
 {% endblock %}
 
+{% set active_room = request.args.get('room', type=int) %}
 {% block content %}
 <div class="container py-3">
 
@@ -26,7 +27,7 @@
           <li class="nav-item">
             <a class="nav-link {% if room == active_room|default(my_slot.room) %}active{% endif %}"
                href="{{ url_for('main.debate_graphic', debate_id=debate.id) }}?room={{ room }}">
-              Room {{ room }}
+              Room {{ room }} ({{ room_styles[room] }})
             </a>
           </li>
         {% endfor %}
@@ -37,7 +38,7 @@
         {% for room in slots_by_room.keys()|sort %}
           <option value="{{ url_for('main.debate_graphic', debate_id=debate.id) }}?room={{ room }}"
             {% if room == active_room|default(my_slot.room) %}selected{% endif %}>
-            Room {{ room }}
+            Room {{ room }} ({{ room_styles[room] }})
           </option>
         {% endfor %}
       </select>
@@ -47,7 +48,7 @@
   {% set room = active_room|default(my_slot.room if my_slot else slots_by_room.keys()|list|first) %}
   {% set slots = slots_by_room[room] %}
 
-  {% if debate.style == "OPD" %}
+  {% if room_styles[room] == "OPD" %}
     <div class="diagram-opd">
       <div class="bench gov-bench">
         <h5 class="bench-title">Government</h5>
