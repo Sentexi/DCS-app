@@ -24,6 +24,7 @@ def dashboard():
 
     # Initialize vote statistics and user role
     vote_percent = votes_cast = votes_total = user_role = None
+    has_slot = False
 
     if current_debate:
         # Get topic IDs for this debate
@@ -45,7 +46,11 @@ def dashboard():
         vote_percent = int((votes_cast / votes_total) * 100) if votes_total else 0
 
         # Find this user's speaker role (if assigned)
-        slot = SpeakerSlot.query.filter_by(debate_id=current_debate.id, user_id=current_user.id).first()
+        slot = SpeakerSlot.query.filter_by(
+            debate_id=current_debate.id,
+            user_id=current_user.id
+        ).first()
+        has_slot = slot is not None
         if slot:
             user_role = f"{slot.role} in Room {slot.room}" if slot.room else slot.role
 
@@ -66,6 +71,7 @@ def dashboard():
         upcoming_debates=upcoming_debates,
         debates=debates,
         single_open=current_debate,
+        has_slot=has_slot,
     )
 
 
