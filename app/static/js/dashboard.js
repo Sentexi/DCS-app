@@ -52,7 +52,6 @@ function castVote(topicId) {
   }).then(() => populateVoteBox());
 }
 
-<<<<<<< aiv06p-codex/implement-populategraphic-function-and-update-ui
 function createBadge(slot) {
   const span = document.createElement('span');
   span.classList.add('role-badge');
@@ -80,10 +79,6 @@ function createBadge(slot) {
 }
 
 function populateGraphic() {
-=======
-function showGraphic() {
-  if (!(window.hasSlot === true || window.hasSlot === 'true')) return;
->>>>>>> dynamic_dashboard
   const debateId = window.currentDebateId;
   const cont = document.getElementById('graphicContainer');
   if (!debateId || !cont) return;
