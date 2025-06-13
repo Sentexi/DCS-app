@@ -19,7 +19,7 @@ def dashboard():
 
     # Get all debates, newest first
     debates = Debate.query.order_by(Debate.id.desc()).all()
-    open_debates = [d for d in debates if d.voting_open]
+    open_debates = [d for d in debates if d.active]
     current_debate = open_debates[0] if len(open_debates) == 1 else None
 
     # Initialize vote statistics and user role
@@ -55,9 +55,9 @@ def dashboard():
             user_role = f"{slot.role} in Room {slot.room}" if slot.room else slot.role
 
     # Categorize debates for UI tabs or display
-    active_debates = [d for d in debates if d.voting_open and (not current_debate or d.id != current_debate.id)]
-    past_debates = [d for d in debates if not d.voting_open and d.assignment_complete]
-    upcoming_debates = [d for d in debates if not d.voting_open and not d.assignment_complete]
+    active_debates = [d for d in debates if d.active and (not current_debate or d.id != current_debate.id)]
+    past_debates = [d for d in debates if not d.active and d.assignment_complete]
+    upcoming_debates = [d for d in debates if not d.active and not d.assignment_complete]
 
     return render_template(
         'main/dashboard.html',
@@ -79,12 +79,12 @@ def dashboard():
 @login_required
 def dashboard_debates_json():
     debates = Debate.query.order_by(Debate.id.desc()).all()
-    open_debates = [d for d in debates if d.voting_open]
+    open_debates = [d for d in debates if d.active]
     current_debate = open_debates[0] if len(open_debates) == 1 else None
 
-    active_debates = [d for d in debates if d.voting_open and (not current_debate or d.id != current_debate.id)]
-    past_debates = [d for d in debates if not d.voting_open and d.assignment_complete]
-    upcoming_debates = [d for d in debates if not d.voting_open and not d.assignment_complete]
+    active_debates = [d for d in debates if d.active and (not current_debate or d.id != current_debate.id)]
+    past_debates = [d for d in debates if not d.active and d.assignment_complete]
+    upcoming_debates = [d for d in debates if not d.active and not d.assignment_complete]
 
     def serialize(d):
         return {'id': d.id, 'title': d.title, 'style': d.style} if d else None
