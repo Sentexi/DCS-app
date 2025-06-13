@@ -184,6 +184,18 @@ def debate_assignments_json(debate_id):
     ]
     return jsonify({'assignments': assignments})
 
+@main_bp.route('/debate/<int:debate_id>/vote_status_json')
+@login_required
+def debate_vote_status_json(debate_id):
+    debate = Debate.query.get_or_404(debate_id)
+    topic_ids = [t.id for t in debate.topics]
+    user_votes = [v.topic_id for v in Vote.query.filter(
+        Vote.user_id == current_user.id,
+        Vote.topic_id.in_(topic_ids)
+    ).all()]
+    votes_left = 2 - len(user_votes)
+    return jsonify({'user_votes': user_votes, 'votes_left': votes_left})
+
 @main_bp.route('/debate/<int:debate_id>/graphic')
 @login_required
 def debate_graphic(debate_id):
