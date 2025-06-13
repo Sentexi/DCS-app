@@ -254,18 +254,19 @@ function updateCurrentDebate(data) {
     if (badge) badge.remove();
   }
 
-  const progress = document.querySelector('.current-debate .progress');
-  const progressBar = document.querySelector('.current-debate .progress-bar');
-  const infoTexts = document.querySelectorAll('.current-debate .d-flex small.text-muted');
-  if (data) {
-    if (progress && progressBar) {
-      progressBar.style.width = data.vote_percent + '%';
-      progressBar.setAttribute('aria-valuenow', data.vote_percent);
-      progressBar.textContent = `${data.votes_cast}/${data.votes_total}`;
-    }
-    if (infoTexts.length >= 2) {
-      infoTexts[0].textContent = `${data.votes_cast}/${data.votes_total} have voted`;
-      infoTexts[1].textContent = data.vote_percent + '%';
+  const progress = document.getElementById('voteProgress');
+  const progressBar = document.querySelector('#voteProgress .progress-bar');
+  const infoWrap = document.getElementById('voteInfo');
+  if (progress) progress.style.display = data ? 'block' : 'none';
+  if (infoWrap) infoWrap.style.display = data ? 'flex' : 'none';
+  if (data && progressBar && infoWrap) {
+    progressBar.style.width = data.vote_percent + '%';
+    progressBar.setAttribute('aria-valuenow', data.vote_percent);
+    progressBar.textContent = `${data.votes_cast}/${data.votes_total}`;
+    const smalls = infoWrap.querySelectorAll('small.text-muted');
+    if (smalls.length >= 2) {
+      smalls[0].textContent = `${data.votes_cast}/${data.votes_total} have voted`;
+      smalls[1].textContent = data.vote_percent + '%';
     }
   }
 
@@ -277,6 +278,11 @@ function updateCurrentDebate(data) {
     } else {
       roleEl.style.display = 'none';
     }
+  }
+
+  const noDebateMsg = document.getElementById('noDebateMessage');
+  if (noDebateMsg) {
+    noDebateMsg.style.display = data ? 'none' : 'block';
   }
 
   window.currentDebateId = data ? data.id : null;
