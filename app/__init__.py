@@ -61,8 +61,8 @@ def create_app(config_file=None):
             current_user.last_seen = datetime.utcnow()
             db.session.commit()
             
-            # --- WebSocket live update for open debates ---
-            open_debates = Debate.query.filter_by(voting_open=True).all()
+            # --- WebSocket live update for active debates ---
+            open_debates = Debate.query.filter_by(active=True).all()
             now = datetime.utcnow()
             ten_minutes_ago = now - timedelta(minutes=10)
 
