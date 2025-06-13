@@ -383,5 +383,8 @@ def assign_dynamic(debate, users, scenario=None):
     if unsafe:
         messages.append('Fallback Chairs were used')
 
+    if success:
+        debate.assignment_complete = True
+        db.session.commit()
     return success, ' | '.join(messages)
 
