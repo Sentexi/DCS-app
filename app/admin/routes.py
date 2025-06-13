@@ -99,6 +99,22 @@ def toggle_voting(debate_id):
     status = "opened" if debate.voting_open else "closed"
     flash(f'Voting {status} for {debate.title}.', 'info')
     return redirect(url_for('admin.admin_dashboard'))
+
+# Toggle active status
+@admin_bp.route('/admin/<int:debate_id>/toggle_active')
+@login_required
+@admin_required
+def toggle_active(debate_id):
+    debate = Debate.query.get_or_404(debate_id)
+    debate.active = not debate.active
+    db.session.commit()
+    socketio.emit('debate_list_update', {
+        'debate_id': debate_id,
+        'active': debate.active
+    })
+    status = "activated" if debate.active else "deactivated"
+    flash(f'Debate {status}.', 'info')
+    return redirect(url_for('admin.admin_dashboard'))
     
 @admin_bp.route('/admin/debate/<int:debate_id>/vote_stats')
 @login_required

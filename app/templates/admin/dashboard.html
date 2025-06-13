@@ -36,6 +36,9 @@
             <a href="{{ url_for('admin.toggle_voting', debate_id=debate.id) }}" class="btn btn-outline-warning btn-sm flex-fill flex-md-grow-0">
               {% if debate.voting_open %}Close Voting{% else %}Open Voting{% endif %}
             </a>
+            <a href="{{ url_for('admin.toggle_active', debate_id=debate.id) }}" class="btn btn-outline-secondary btn-sm flex-fill flex-md-grow-0">
+              {% if debate.active %}Set Inactive{% else %}Set Active{% endif %}
+            </a>
             {% if debate.style == 'Dynamic' %}
             <a href="{{ url_for('admin.dynamic_plan', debate_id=debate.id) }}" class="btn btn-info btn-sm flex-fill flex-md-grow-0">Plan Dynamic Rooms</a>
             {% else %}
