@@ -233,3 +233,66 @@ socket.on('assignments_ready', data => {
     populateGraphic();
   }
 });
+
+function buildDebateCards(cont, debates, badgeClass) {
+  cont.innerHTML = '';
+  if (!debates.length) {
+    const div = document.createElement('div');
+    div.className = 'text-center text-muted my-4';
+    if (cont.id === 'active') div.textContent = 'No other active debates.';
+    else if (cont.id === 'past') div.textContent = 'No past debates.';
+    else div.textContent = 'No upcoming debates.';
+    cont.appendChild(div);
+    return;
+  }
+  debates.forEach(d => {
+    const card = document.createElement('div');
+    card.className = 'card debate-card mb-3';
+    const body = document.createElement('div');
+    body.className = 'card-body';
+    const title = document.createElement('h6');
+    title.className = 'card-title';
+    title.textContent = d.title;
+    const span = document.createElement('span');
+    span.className = 'badge ' + badgeClass;
+    span.textContent = d.style;
+    const link = document.createElement('a');
+    link.href = `/debate/${d.id}`;
+    link.className = 'stretched-link';
+    body.append(title, span, link);
+    card.appendChild(body);
+    cont.appendChild(card);
+  });
+}
+
+function updateDebateLists(data) {
+  const activeCont = document.getElementById('active');
+  const pastCont = document.getElementById('past');
+  const upcomingCont = document.getElementById('upcoming');
+  if (!activeCont || !pastCont || !upcomingCont) return;
+  buildDebateCards(activeCont, data.active_debates, 'bg-info');
+  buildDebateCards(pastCont, data.past_debates, 'bg-secondary');
+  buildDebateCards(upcomingCont, data.upcoming_debates, 'bg-warning text-dark');
+  const openCount = (data.current_debate ? 1 : 0) + data.active_debates.length;
+  if (openCount === 1) {
+    window.currentDebateId = data.current_debate
+      ? data.current_debate.id
+      : data.active_debates[0].id;
+  } else {
+    window.currentDebateId = null;
+  }
+}
+
+function fetchDebateLists() {
+  fetch('/dashboard/debates_json')
+    .then(r => r.json())
+    .then(updateDebateLists);
+}
+
+socket.on('debate_list_update', () => {
+  if (typeof fetchDebateLists === 'function') {
+    fetchDebateLists();
+  } else {
+    location.reload();
+  }
+});

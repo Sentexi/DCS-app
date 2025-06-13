@@ -92,6 +92,10 @@ def toggle_voting(debate_id):
         'debate_id': debate_id,
         'voting_open': debate.voting_open
     })
+    socketio.emit('debate_list_update', {
+        'debate_id': debate_id,
+        'voting_open': debate.voting_open
+    })
     status = "opened" if debate.voting_open else "closed"
     flash(f'Voting {status} for {debate.title}.', 'info')
     return redirect(url_for('admin.admin_dashboard'))
