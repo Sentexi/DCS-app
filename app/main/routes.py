@@ -89,8 +89,45 @@ def dashboard_debates_json():
     def serialize(d):
         return {'id': d.id, 'title': d.title, 'style': d.style} if d else None
 
+    def serialize_current(d):
+        if not d:
+            return None
+        topic_ids = [t.id for t in d.topics]
+        votes = Vote.query.filter(Vote.topic_id.in_(topic_ids)).all()
+        voter_ids = set(v.user_id for v in votes)
+        votes_cast = len(voter_ids)
+
+        now = datetime.utcnow()
+        ten_minutes_ago = now - timedelta(minutes=10)
+        active_user_ids = set(
+            u.id for u in User.query.filter(User.last_seen >= ten_minutes_ago).all()
+        )
+        eligible_user_ids = active_user_ids.union(voter_ids)
+        votes_total = len(eligible_user_ids)
+        vote_percent = int((votes_cast / votes_total) * 100) if votes_total else 0
+
+        slot = SpeakerSlot.query.filter_by(
+            debate_id=d.id,
+            user_id=current_user.id
+        ).first()
+        user_role = (
+            f"{slot.role} in Room {slot.room}" if slot and slot.room else slot.role
+        ) if slot else None
+
+        return {
+            'id': d.id,
+            'title': d.title,
+            'style': d.style,
+            'voting_open': d.voting_open,
+            'assignment_complete': d.assignment_complete,
+            'user_role': user_role,
+            'vote_percent': vote_percent,
+            'votes_cast': votes_cast,
+            'votes_total': votes_total,
+        }
+
     return jsonify({
-        'current_debate': serialize(current_debate),
+        'current_debate': serialize_current(current_debate),
         'active_debates': [serialize(d) for d in active_debates],
         'past_debates': [serialize(d) for d in past_debates],
         'upcoming_debates': [serialize(d) for d in upcoming_debates],

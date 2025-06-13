@@ -234,6 +234,77 @@ socket.on('assignments_ready', data => {
   }
 });
 
+function updateCurrentDebate(data) {
+  const titleEl = document.querySelector('.current-debate .card-title');
+  if (!titleEl) return;
+
+  const badge = titleEl.querySelector('span.badge');
+  if (data) {
+    titleEl.childNodes[0].nodeValue = data.title + ' ';
+    if (badge) {
+      badge.textContent = data.style;
+    } else {
+      const span = document.createElement('span');
+      span.className = 'badge bg-info';
+      span.textContent = data.style;
+      titleEl.appendChild(span);
+    }
+  } else {
+    titleEl.textContent = 'No debate right now';
+    if (badge) badge.remove();
+  }
+
+  const progress = document.querySelector('.current-debate .progress');
+  const progressBar = document.querySelector('.current-debate .progress-bar');
+  const infoTexts = document.querySelectorAll('.current-debate .d-flex small.text-muted');
+  if (data) {
+    if (progress && progressBar) {
+      progressBar.style.width = data.vote_percent + '%';
+      progressBar.setAttribute('aria-valuenow', data.vote_percent);
+      progressBar.textContent = `${data.votes_cast}/${data.votes_total}`;
+    }
+    if (infoTexts.length >= 2) {
+      infoTexts[0].textContent = `${data.votes_cast}/${data.votes_total} have voted`;
+      infoTexts[1].textContent = data.vote_percent + '%';
+    }
+  }
+
+  const roleEl = document.querySelector('.current-debate .fw-bold.text-primary');
+  if (roleEl) {
+    if (data && data.user_role) {
+      roleEl.textContent = `You are ${data.user_role}`;
+      roleEl.style.display = 'block';
+    } else {
+      roleEl.style.display = 'none';
+    }
+  }
+
+  window.currentDebateId = data ? data.id : null;
+  window.votingOpen = data ? data.voting_open : false;
+  window.assignmentsComplete = data ? data.assignment_complete : false;
+  window.currentDebateStyle = data ? data.style : '';
+  window.userHasSlot = data && data.user_role ? true : false;
+
+  const voteBox = document.getElementById('voteBoxContainer');
+  if (voteBox) {
+    if (window.currentDebateId && window.votingOpen) {
+      voteBox.style.display = 'block';
+      populateVoteBox();
+    } else {
+      voteBox.style.display = 'none';
+    }
+  }
+
+  const graphicCont = document.getElementById('graphicContainer');
+  if (graphicCont) {
+    if (window.currentDebateId && window.assignmentsComplete && window.userHasSlot) {
+      populateGraphic();
+    } else {
+      graphicCont.style.display = 'none';
+    }
+  }
+}
+
 function buildDebateCards(cont, debates, badgeClass) {
   cont.innerHTML = '';
   if (!debates.length) {
@@ -286,7 +357,10 @@ function updateDebateLists(data) {
 function fetchDebateLists() {
   fetch('/dashboard/debates_json')
     .then(r => r.json())
-    .then(updateDebateLists);
+    .then(data => {
+      updateDebateLists(data);
+      updateCurrentDebate(data.current_debate);
+    });
 }
 
 socket.on('debate_list_update', () => {
