@@ -301,11 +301,16 @@ def debate_graphic(debate_id):
         else:
             room_styles[room] = debate.style
 
+    active_room = request.args.get('room', type=int)
+    if not active_room:
+        active_room = my_slot.room if my_slot else sorted(slots_by_room)[0]
+
     return render_template(
         'main/graphic.html',
         debate=debate,
         slots_by_room=slots_by_room,
         room_styles=room_styles,
+        active_room=active_room,
         my_slot=my_slot,
         user=current_user,
     )

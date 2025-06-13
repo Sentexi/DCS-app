@@ -6,7 +6,6 @@
 
 {% endblock %}
 
-{% set active_room = request.args.get('room', type=int) %}
 {% block content %}
 <div class="container py-3">
 
@@ -25,7 +24,7 @@
       <ul class="nav nav-tabs flex-nowrap overflow-auto">
         {% for room in slots_by_room.keys()|sort %}
           <li class="nav-item">
-            <a class="nav-link {% if room == active_room|default(my_slot.room) %}active{% endif %}"
+            <a class="nav-link {% if room == active_room %}active{% endif %}"
                href="{{ url_for('main.debate_graphic', debate_id=debate.id) }}?room={{ room }}">
               Room {{ room }} ({{ room_styles[room] }})
             </a>
@@ -37,7 +36,7 @@
       <select class="form-select" onchange="location = this.value;">
         {% for room in slots_by_room.keys()|sort %}
           <option value="{{ url_for('main.debate_graphic', debate_id=debate.id) }}?room={{ room }}"
-            {% if room == active_room|default(my_slot.room) %}selected{% endif %}>
+            {% if room == active_room %}selected{% endif %}>
             Room {{ room }} ({{ room_styles[room] }})
           </option>
         {% endfor %}
@@ -45,7 +44,7 @@
     </div>
   {% endif %}
 
-  {% set room = active_room|default(my_slot.room if my_slot else slots_by_room.keys()|list|first) %}
+  {% set room = active_room %}
   {% set slots = slots_by_room[room] %}
 
   {% if room_styles[room] == "OPD" %}
