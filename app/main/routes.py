@@ -244,6 +244,7 @@ def debate_topics_json(debate_id):
 @main_bp.route('/debate/<int:debate_id>/assignments_json')
 @login_required
 def debate_assignments_json(debate_id):
+    debate = Debate.query.get_or_404(debate_id)
     slots = SpeakerSlot.query.filter_by(debate_id=debate_id).all()
     assignments = [
         {
@@ -253,7 +254,22 @@ def debate_assignments_json(debate_id):
             'username': s.user.username
         } for s in slots
     ]
-    return jsonify({'assignments': assignments})
+
+    slots_by_room = {}
+    for s in slots:
+        slots_by_room.setdefault(s.room, []).append(s)
+
+    room_styles = {}
+    for room, room_slots in slots_by_room.items():
+        roles = {sl.role for sl in room_slots}
+        if roles.intersection({'OG', 'OO', 'CG', 'CO'}):
+            room_styles[room] = 'BP'
+        elif roles.intersection({'Gov', 'Opp'}):
+            room_styles[room] = 'OPD'
+        else:
+            room_styles[room] = debate.style
+
+    return jsonify({'assignments': assignments, 'room_styles': room_styles})
 
 @main_bp.route('/debate/<int:debate_id>/vote_status_json')
 @login_required

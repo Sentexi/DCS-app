@@ -90,10 +90,11 @@ function populateGraphic() {
       if (!mySlot) return;
       const room = mySlot.room;
       const slots = data.assignments.filter(a => a.room == room);
+      const roomStyle = (data.room_styles && data.room_styles[room]) || window.currentDebateStyle;
 
       cont.innerHTML = '';
 
-      if (window.currentDebateStyle === 'OPD') {
+      if (roomStyle === 'OPD') {
         const diagram = document.createElement('div');
         diagram.className = 'diagram-opd';
 
