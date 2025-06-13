@@ -6,6 +6,7 @@ from app.models import Debate, Topic, Vote, User
 from app.extensions import db
 from app.logic.assign import assign_speakers, _compute_room_counts
 from datetime import datetime, timedelta
+from app import socketio
 
 from . import admin_bp
 
@@ -87,6 +88,10 @@ def toggle_voting(debate_id):
     debate = Debate.query.get_or_404(debate_id)
     debate.voting_open = not debate.voting_open
     db.session.commit()
+    socketio.emit('debate_status', {
+        'debate_id': debate_id,
+        'voting_open': debate.voting_open
+    })
     status = "opened" if debate.voting_open else "closed"
     flash(f'Voting {status} for {debate.title}.', 'info')
     return redirect(url_for('admin.admin_dashboard'))
@@ -225,6 +230,8 @@ def run_assign(debate_id):
     scenario = request.form.get('scenario')
     ok, msg = assign_speakers(debate, users, scenario=scenario)
     flash(msg, "success" if ok else "danger")
+    if ok:
+        socketio.emit('assignments_ready', {'debate_id': debate_id})
     return redirect(url_for('admin.admin_dashboard'))
 
 

@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, request
+from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
 from flask_login import login_required, current_user
 from sqlalchemy.orm import joinedload
 from app.models import Debate, Topic, Vote
@@ -8,7 +8,7 @@ from app import socketio
 from datetime import datetime, timedelta
 
 
-from . import main_bp 
+from . import main_bp
 
 @main_bp.route('/')
 @login_required
@@ -162,6 +162,27 @@ def debate_assignments(debate_id):
                            debate=debate,
                            slots_by_room=slots_by_room,
                            user_map=user_map)
+
+@main_bp.route('/debate/<int:debate_id>/topics_json')
+@login_required
+def debate_topics_json(debate_id):
+    debate = Debate.query.get_or_404(debate_id)
+    topics = [{'id': t.id, 'text': t.text} for t in debate.topics]
+    return jsonify({'topics': topics})
+
+@main_bp.route('/debate/<int:debate_id>/assignments_json')
+@login_required
+def debate_assignments_json(debate_id):
+    slots = SpeakerSlot.query.filter_by(debate_id=debate_id).all()
+    assignments = [
+        {
+            'role': s.role,
+            'room': s.room,
+            'user_id': s.user_id,
+            'username': s.user.username
+        } for s in slots
+    ]
+    return jsonify({'assignments': assignments})
 
 @main_bp.route('/debate/<int:debate_id>/graphic')
 @login_required

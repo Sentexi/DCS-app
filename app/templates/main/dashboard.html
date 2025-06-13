@@ -8,6 +8,9 @@
 {% block content %}
 <script>
   window.currentDebateId = {{ current_debate.id if current_debate else 'null' }};
+  window.votingOpen = {{ 'true' if current_debate and current_debate.voting_open else 'false' }};
+  window.assignmentsComplete = {{ 'true' if current_debate and current_debate.assignment_complete else 'false' }};
+  window.graphicUrl = "{{ url_for('main.debate_graphic', debate_id=current_debate.id) if current_debate else '' }}";
 </script>
 
 <div class="container my-4">
@@ -42,11 +45,19 @@
         <p class="mt-2 fw-bold text-primary">You are {{ user_role }}</p>
       {% endif %}
       <div class="d-grid gap-2 mt-3">
-        <a href="{{ url_for('main.debate_view', debate_id=current_debate.id) }}"
-           class="btn btn-primary">Vote Now</a>
+        <div id="voteDropdownContainer" class="dropdown">
+          <button class="btn btn-primary dropdown-toggle" type="button" id="voteDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+            Vote Now
+          </button>
+          <ul class="dropdown-menu" id="voteDropdownMenu"></ul>
+        </div>
         {% if current_debate.assignment_complete %}
-          <a href="{{ url_for('main.debate_graphic', debate_id=current_debate.id) }}"
-             class="btn btn-outline-secondary">View Speakers</a>
+        <div class="dropdown">
+          <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="speakerDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+            View Speakers
+          </button>
+          <ul class="dropdown-menu" id="speakerDropdownMenu"></ul>
+        </div>
         {% endif %}
       </div>
       {% else %}
