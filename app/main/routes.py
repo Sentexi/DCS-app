@@ -280,23 +280,32 @@ def debate_graphic(debate_id):
         flash('Speaker assignments are not complete for this debate.', 'warning')
         return redirect(url_for('main.debate_view', debate_id=debate_id))
 
-    # Find current user's slot
-    my_slot = SpeakerSlot.query.filter_by(debate_id=debate_id, user_id=current_user.id).first()
-
-    # For admins, allow seeing all, otherwise restrict access
-    if not my_slot and not current_user.is_admin:
-        flash('You are not assigned to this debate.', 'danger')
-        return redirect(url_for('main.debate_view', debate_id=debate_id))
+    # Find current user's slot (may be None if not assigned)
+    my_slot = SpeakerSlot.query.filter_by(
+        debate_id=debate_id, user_id=current_user.id
+    ).first()
 
     # Group slots by room (for multi-room support)
     slots_by_room = {}
     for slot in debate.speakerslots:
         slots_by_room.setdefault(slot.room, []).append(slot)
 
+    # Determine style for each room based on assigned roles
+    room_styles = {}
+    for room, slots in slots_by_room.items():
+        roles = {s.role for s in slots}
+        if roles.intersection({'OG', 'OO', 'CG', 'CO'}):
+            room_styles[room] = 'BP'
+        elif roles.intersection({'Gov', 'Opp'}):
+            room_styles[room] = 'OPD'
+        else:
+            room_styles[room] = debate.style
+
     return render_template(
         'main/graphic.html',
         debate=debate,
         slots_by_room=slots_by_room,
+        room_styles=room_styles,
         my_slot=my_slot,
-        user=current_user
+        user=current_user,
     )
