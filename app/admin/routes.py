@@ -55,7 +55,7 @@ def create_debate():
         if not title or style not in ['OPD', 'BP', 'Dynamic']:
             flash('Please fill all fields correctly.', 'danger')
             return redirect(url_for('admin.create_debate'))
-        debate = Debate(title=title, style=style)
+        debate = Debate(title=title, style=style, active=False)
         db.session.add(debate)
         db.session.commit()
         flash('Debate created!', 'success')

@@ -65,6 +65,7 @@ class Debate(db.Model):
         nullable=False
     )
     voting_open = db.Column(db.Boolean, default=True)
+    active = db.Column(db.Boolean, default=False)
 
     # Relationship: which topics belong to this debate?
     topics = db.relationship('Topic', back_populates='debate', cascade='all, delete-orphan')
