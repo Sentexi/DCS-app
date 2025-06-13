@@ -75,6 +75,28 @@ def dashboard():
     )
 
 
+@main_bp.route('/dashboard/debates_json')
+@login_required
+def dashboard_debates_json():
+    debates = Debate.query.order_by(Debate.id.desc()).all()
+    open_debates = [d for d in debates if d.voting_open]
+    current_debate = open_debates[0] if len(open_debates) == 1 else None
+
+    active_debates = [d for d in debates if d.voting_open and (not current_debate or d.id != current_debate.id)]
+    past_debates = [d for d in debates if not d.voting_open and d.assignment_complete]
+    upcoming_debates = [d for d in debates if not d.voting_open and not d.assignment_complete]
+
+    def serialize(d):
+        return {'id': d.id, 'title': d.title, 'style': d.style} if d else None
+
+    return jsonify({
+        'current_debate': serialize(current_debate),
+        'active_debates': [serialize(d) for d in active_debates],
+        'past_debates': [serialize(d) for d in past_debates],
+        'upcoming_debates': [serialize(d) for d in upcoming_debates],
+    })
+
+
 @main_bp.route('/debate/<int:debate_id>', methods=['GET', 'POST'])
 @login_required
 def debate_view(debate_id):
