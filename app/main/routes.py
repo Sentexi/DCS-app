@@ -87,7 +87,12 @@ def dashboard_debates_json():
     upcoming_debates = [d for d in debates if not d.active and not d.assignment_complete]
 
     def serialize(d):
-        return {'id': d.id, 'title': d.title, 'style': d.style} if d else None
+        return {
+            'id': d.id,
+            'title': d.title,
+            'style': d.style,
+            'active': d.active,
+        } if d else None
 
     def serialize_current(d):
         if not d:
@@ -118,6 +123,7 @@ def dashboard_debates_json():
             'id': d.id,
             'title': d.title,
             'style': d.style,
+            'active': d.active,
             'voting_open': d.voting_open,
             'assignment_complete': d.assignment_complete,
             'user_role': user_role,

@@ -347,14 +347,22 @@ function updateDebateLists(data) {
   const pastCont = document.getElementById('past');
   const upcomingCont = document.getElementById('upcoming');
   if (!activeCont || !pastCont || !upcomingCont) return;
-  buildDebateCards(activeCont, data.active_debates, 'bg-info');
-  buildDebateCards(pastCont, data.past_debates, 'bg-secondary');
-  buildDebateCards(upcomingCont, data.upcoming_debates, 'bg-warning text-dark');
-  const openCount = (data.current_debate ? 1 : 0) + data.active_debates.length;
+
+  const activeDebates = data.active_debates.filter(d => d.active);
+  const pastDebates = data.past_debates.filter(d => !d.active && d.assignment_complete);
+  const upcomingDebates = data.upcoming_debates.filter(d => !d.active && !d.assignment_complete);
+
+  buildDebateCards(activeCont, activeDebates, 'bg-info');
+  buildDebateCards(pastCont, pastDebates, 'bg-secondary');
+  buildDebateCards(upcomingCont, upcomingDebates, 'bg-warning text-dark');
+
+  const openCount = (data.current_debate && data.current_debate.active ? 1 : 0) + activeDebates.length;
   if (openCount === 1) {
-    window.currentDebateId = data.current_debate
-      ? data.current_debate.id
-      : data.active_debates[0].id;
+    if (data.current_debate && data.current_debate.active) {
+      window.currentDebateId = data.current_debate.id;
+    } else {
+      window.currentDebateId = activeDebates[0].id;
+    }
   } else {
     window.currentDebateId = null;
   }
