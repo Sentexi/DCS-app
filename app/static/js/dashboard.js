@@ -53,6 +53,7 @@ function castVote(topicId) {
 }
 
 function showGraphic() {
+  if (!(window.hasSlot === true || window.hasSlot === 'true')) return;
   const debateId = window.currentDebateId;
   const cont = document.getElementById('graphicContainer');
   if (!debateId || !cont) return;

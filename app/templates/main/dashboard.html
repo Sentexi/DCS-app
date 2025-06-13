@@ -11,6 +11,7 @@
   window.votingOpen = {{ 'true' if current_debate and current_debate.voting_open else 'false' }};
   window.assignmentsComplete = {{ 'true' if current_debate and current_debate.assignment_complete else 'false' }};
   window.graphicUrl = "{{ url_for('main.debate_graphic', debate_id=current_debate.id) if current_debate else '' }}";
+  window.hasSlot = {{ 'true' if has_slot else 'false' }};
 </script>
 
 <div class="container my-4">
