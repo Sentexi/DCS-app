@@ -143,7 +143,7 @@ def finalize(debate_id):
     debate.active = False
     db.session.commit()
 
-    if debate.style == 'OPD':
+    if debate.style in ('OPD', 'Dynamic'):
         user_ids = {sp.user_id for sp in speaker_slots}
         for uid in user_ids:
             user = User.query.get(uid)
