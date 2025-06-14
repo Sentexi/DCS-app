@@ -190,6 +190,17 @@ document.addEventListener('DOMContentLoaded', () => {
       (window.userHasSlot === true || window.userHasSlot === 'true')) {
     populateGraphic();
   }
+
+  const judgeBtn = document.getElementById('judgingButton');
+  if (judgeBtn) {
+    if (window.currentDebateId &&
+        (window.assignmentsComplete === true || window.assignmentsComplete === 'true') &&
+        (window.userIsJudgeChair === true || window.userIsJudgeChair === 'true')) {
+      judgeBtn.style.display = 'inline-block';
+    } else {
+      judgeBtn.style.display = 'none';
+    }
+  }
 });
 
 socket.on('vote_update', data => {
@@ -291,6 +302,7 @@ function updateCurrentDebate(data) {
   window.assignmentsComplete = data ? data.assignment_complete : false;
   window.currentDebateStyle = data ? data.style : '';
   window.userHasSlot = data && data.user_role ? true : false;
+  window.userIsJudgeChair = data && data.is_judge_chair ? true : false;
 
   const voteBox = document.getElementById('voteBoxContainer');
   if (voteBox) {
@@ -308,6 +320,24 @@ function updateCurrentDebate(data) {
       populateGraphic();
     } else {
       graphicCont.style.display = 'none';
+    }
+  }
+
+  const judgeBtn = document.getElementById('judgingButton');
+  if (judgeBtn) {
+    if (window.currentDebateId && window.assignmentsComplete && window.userIsJudgeChair) {
+      judgeBtn.style.display = 'inline-block';
+      if (data && data.active) {
+        judgeBtn.classList.remove('disabled');
+        judgeBtn.removeAttribute('aria-disabled');
+        judgeBtn.href = `/debate/${data.id}/judging`;
+      } else {
+        judgeBtn.classList.add('disabled');
+        judgeBtn.setAttribute('aria-disabled', 'true');
+        judgeBtn.removeAttribute('href');
+      }
+    } else {
+      judgeBtn.style.display = 'none';
     }
   }
 }
