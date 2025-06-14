@@ -1,7 +1,7 @@
 """add first and last name fields
 
 Revision ID: 1a2b3c4d5e6f
-Revises: 0d2e6c501f2d
+Revises: 19b5a7cb2c59
 Create Date: 2025-05-28 00:00:00.000000
 """
 
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision = '1a2b3c4d5e6f'
-down_revision = '0d2e6c501f2d'
+down_revision = '19b5a7cb2c59'
 branch_labels = None
 depends_on = None
 
