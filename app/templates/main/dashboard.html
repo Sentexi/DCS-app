@@ -14,6 +14,7 @@
   window.currentDebateStyle = "{{ current_debate.style if current_debate else '' }}";
   window.currentUserId = {{ current_user.id }};
   window.userHasSlot = {{ 'true' if user_role else 'false' }};
+  window.userIsJudgeChair = {{ 'true' if is_judge_chair else 'false' }};
 </script>
 
 <div class="container my-4">
@@ -48,6 +49,10 @@
         <div id="voteBoxContainer" class="card p-3 vote-box"{% if not current_debate or not current_debate.voting_open %} style="display:none"{% endif %}></div>
         <div id="graphicContainer" class="mt-3"{% if not current_debate or not current_debate.assignment_complete or not user_role %} style="display:none"{% endif %}></div>
       </div>
+      <a id="judgingButton"
+         class="btn btn-warning mt-3{% if current_debate and not current_debate.active %} disabled{% endif %}"
+         {% if current_debate and current_debate.active %}href="{{ url_for('debate.judging', debate_id=current_debate.id) }}"{% endif %}
+         {% if not current_debate or not current_debate.assignment_complete or not is_judge_chair %}style="display:none"{% elif current_debate and not current_debate.active %} aria-disabled="true"{% endif %}>Judging</a>
       <p id="noDebateMessage" class="text-muted"{% if current_debate %} style="display:none"{% endif %}>No active debate at the moment.</p>
     </div>
   </div>

@@ -25,6 +25,7 @@ def dashboard():
     # Initialize vote statistics and user role
     vote_percent = votes_cast = votes_total = user_role = None
     has_slot = False
+    is_judge_chair = False
 
     if current_debate:
         # Get topic IDs for this debate
@@ -53,6 +54,8 @@ def dashboard():
         has_slot = slot is not None
         if slot:
             user_role = f"{slot.role} in Room {slot.room}" if slot.room else slot.role
+            if slot.role == 'Judge-Chair':
+                is_judge_chair = True
 
     # Categorize debates for UI tabs or display
     active_debates = [d for d in debates if d.active and (not current_debate or d.id != current_debate.id)]
@@ -72,6 +75,7 @@ def dashboard():
         debates=debates,
         single_open=current_debate,
         has_slot=has_slot,
+        is_judge_chair=is_judge_chair,
     )
 
 
@@ -118,6 +122,7 @@ def dashboard_debates_json():
         user_role = (
             f"{slot.role} in Room {slot.room}" if slot and slot.room else slot.role
         ) if slot else None
+        is_judge_chair = slot.role == 'Judge-Chair' if slot else False
 
         return {
             'id': d.id,
@@ -127,6 +132,7 @@ def dashboard_debates_json():
             'voting_open': d.voting_open,
             'assignment_complete': d.assignment_complete,
             'user_role': user_role,
+            'is_judge_chair': is_judge_chair,
             'vote_percent': vote_percent,
             'votes_cast': votes_cast,
             'votes_total': votes_total,
