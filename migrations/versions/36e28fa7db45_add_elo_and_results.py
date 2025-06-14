@@ -1,7 +1,7 @@
 """add elo rating and result tables
 
 Revision ID: 36e28fa7db45
-Revises: 0d2e6c501f2d
+Revises: 1a2b3c4d5e6f
 Create Date: 2025-05-30 00:00:00.000000
 """
 
@@ -9,7 +9,7 @@ from alembic import op
 import sqlalchemy as sa
 
 revision = '36e28fa7db45'
-down_revision = '0d2e6c501f2d'
+down_revision = '1a2b3c4d5e6f'
 branch_labels = None
 depends_on = None
 
