@@ -2,6 +2,7 @@ from flask import render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
 from app.extensions import db
 from app.models import Debate, SpeakerSlot, Score, BpRank, OpdResult, EloLog, User
+from app.logic.elo import compute_bp_elo
 
 from . import debate_bp
 
@@ -139,15 +140,14 @@ def finalize(debate_id):
     else:  # BP
         ranks = {r.team: r.rank for r in BpRank.query.filter_by(debate_id=debate_id).all()}
         team_points = {1: 3, 2: 2, 3: 1, 4: 0}
-        for sp in speaker_slots:
-            team = sp.role.split('-')[0]
+        # Update elo ratings using the Plackett-Luce model
+        elo_updates = compute_bp_elo(speaker_slots, ranks)
+        for slot, old, new in elo_updates:
+            team = slot.role.split('-')[0]
             rank = ranks.get(team)
             pts = team_points.get(rank, 0)
-            db.session.add(OpdResult(debate_id=debate_id, user_id=sp.user_id, points=pts))
-            old = sp.user.elo_rating or 1000
-            new = old + pts - 1.5
-            sp.user.elo_rating = new
-            db.session.add(EloLog(debate_id=debate_id, user_id=sp.user_id, old_elo=old, new_elo=new, change=new-old))
+            db.session.add(OpdResult(debate_id=debate_id, user_id=slot.user_id, points=pts))
+            db.session.add(EloLog(debate_id=debate_id, user_id=slot.user_id, old_elo=old, new_elo=new, change=new-old))
 
     debate.active = False
     db.session.commit()
