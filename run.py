@@ -31,7 +31,5 @@ def create_initial_admin():
 
 if __name__ == '__main__':
     create_initial_admin()
-    
-    socketio.run(app, host="0.0.0.0", port=5000)
-    
-    app.run(debug=True)
+
+    socketio.run(app, host='0.0.0.0', port=app.config.get('PORT', 5000))
