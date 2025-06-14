@@ -78,6 +78,88 @@ function createBadge(slot) {
   return span;
 }
 
+let currentRoom = null;
+
+function renderRoomGraphic(cont, data, room) {
+  const slots = data.assignments.filter(a => a.room == room);
+  const roomStyle = (data.room_styles && data.room_styles[room]) || window.currentDebateStyle;
+
+  const diagram = document.createElement('div');
+  if (roomStyle === 'OPD') {
+    diagram.className = 'diagram-opd';
+
+    const gov = document.createElement('div');
+    gov.className = 'bench gov-bench';
+    const gt = document.createElement('h5');
+    gt.className = 'bench-title';
+    gt.textContent = 'Government';
+    gov.appendChild(gt);
+    slots.filter(s => s.role === 'Gov').forEach(s => gov.appendChild(createBadge(s)));
+
+    const free = document.createElement('div');
+    free.className = 'free-area';
+    const ft = document.createElement('h6');
+    ft.textContent = 'Free Speakers';
+    free.appendChild(ft);
+    const freeSlots = slots.filter(s => s.role.startsWith('Free'));
+    if (freeSlots.length) {
+      freeSlots.forEach(s => free.appendChild(createBadge(s)));
+    } else {
+      const ph = document.createElement('span');
+      ph.className = 'placeholder';
+      ph.textContent = 'No Free Speaker';
+      free.appendChild(ph);
+    }
+
+    const opp = document.createElement('div');
+    opp.className = 'bench opp-bench';
+    const ot = document.createElement('h5');
+    ot.className = 'bench-title';
+    ot.textContent = 'Opposition';
+    opp.appendChild(ot);
+    slots.filter(s => s.role === 'Opp').forEach(s => opp.appendChild(createBadge(s)));
+
+    diagram.append(gov, free, opp);
+  } else {
+    diagram.className = 'diagram-bp';
+    ['OG', 'OO', 'CG', 'CO'].forEach(team => {
+      const card = document.createElement('div');
+      card.className = 'bp-team-card mb-3 mb-md-0';
+      const title = document.createElement('h6');
+      title.className = 'bp-title';
+      title.textContent = team;
+      card.appendChild(title);
+      const ts = slots.filter(s => s.role === team);
+      if (ts.length) {
+        ts.forEach(s => card.appendChild(createBadge(s)));
+      } else {
+        const ph = document.createElement('span');
+        ph.className = 'placeholder';
+        ph.textContent = 'Empty';
+        card.appendChild(ph);
+      }
+      diagram.appendChild(card);
+    });
+  }
+
+  const judges = document.createElement('div');
+  judges.className = 'judges-row mt-3';
+  const judgeSlots = slots.filter(s => s.role.startsWith('Judge'));
+  if (judgeSlots.length) {
+    judgeSlots.forEach(s => judges.appendChild(createBadge(s)));
+  } else {
+    const ph = document.createElement('span');
+    ph.className = 'placeholder';
+    ph.textContent = 'No Judges Assigned';
+    judges.appendChild(ph);
+  }
+
+  cont.innerHTML = '';
+  cont.appendChild(diagram);
+  cont.appendChild(judges);
+  cont.style.display = 'block';
+}
+
 function populateGraphic() {
   const debateId = window.currentDebateId;
   const cont = document.getElementById('graphicContainer');
@@ -86,94 +168,33 @@ function populateGraphic() {
   fetch(`/debate/${debateId}/assignments_json`)
     .then(r => r.json())
     .then(data => {
+      const rooms = [...new Set(data.assignments.map(a => a.room))].sort((a, b) => a - b);
       const mySlot = data.assignments.find(a => a.user_id == window.currentUserId);
-      if (!mySlot) return;
-      const room = mySlot.room;
-      const slots = data.assignments.filter(a => a.room == room);
-      const roomStyle = (data.room_styles && data.room_styles[room]) || window.currentDebateStyle;
-
+      if (!currentRoom) {
+        currentRoom = mySlot ? mySlot.room : rooms[0];
+      }
       cont.innerHTML = '';
-
-      if (roomStyle === 'OPD') {
-        const diagram = document.createElement('div');
-        diagram.className = 'diagram-opd';
-
-        const gov = document.createElement('div');
-        gov.className = 'bench gov-bench';
-        const gt = document.createElement('h5');
-        gt.className = 'bench-title';
-        gt.textContent = 'Government';
-        gov.appendChild(gt);
-        slots.filter(s => s.role === 'Gov').forEach(s => gov.appendChild(createBadge(s)));
-
-        const free = document.createElement('div');
-        free.className = 'free-area';
-        const ft = document.createElement('h6');
-        ft.textContent = 'Free Speakers';
-        free.appendChild(ft);
-        const freeSlots = slots.filter(s => s.role.startsWith('Free'));
-        if (freeSlots.length) {
-          freeSlots.forEach(s => free.appendChild(createBadge(s)));
-        } else {
-          const ph = document.createElement('span');
-          ph.className = 'placeholder';
-          ph.textContent = 'No Free Speaker';
-          free.appendChild(ph);
-        }
-
-        const opp = document.createElement('div');
-        opp.className = 'bench opp-bench';
-        const ot = document.createElement('h5');
-        ot.className = 'bench-title';
-        ot.textContent = 'Opposition';
-        opp.appendChild(ot);
-        slots.filter(s => s.role === 'Opp').forEach(s => opp.appendChild(createBadge(s)));
-
-        diagram.append(gov, free, opp);
-        cont.appendChild(diagram);
-
-        const judges = document.createElement('div');
-        judges.className = 'judges-row mt-3';
-        const judgeSlots = slots.filter(s => s.role.startsWith('Judge'));
-        if (judgeSlots.length) {
-          judgeSlots.forEach(s => judges.appendChild(createBadge(s)));
-        } else {
-          const ph = document.createElement('span');
-          ph.className = 'placeholder';
-          ph.textContent = 'No Judges Assigned';
-          judges.appendChild(ph);
-        }
-        cont.appendChild(judges);
-      } else {
-        const diagram = document.createElement('div');
-        diagram.className = 'diagram-bp';
-        ['OG', 'OO', 'CG', 'CO'].forEach(team => {
-          const card = document.createElement('div');
-          card.className = 'bp-team-card mb-3 mb-md-0';
-          const title = document.createElement('h6');
-          title.className = 'bp-title';
-          title.textContent = team;
-          card.appendChild(title);
-          const ts = slots.filter(s => s.role === team);
-          if (ts.length) {
-            ts.forEach(s => card.appendChild(createBadge(s)));
-          } else {
-            const ph = document.createElement('span');
-            ph.className = 'placeholder';
-            ph.textContent = 'Empty';
-            card.appendChild(ph);
-          }
-          diagram.appendChild(card);
+      if (rooms.length > 1) {
+        const select = document.createElement('select');
+        select.className = 'form-select mb-2';
+        rooms.forEach(r => {
+          const opt = document.createElement('option');
+          opt.value = r;
+          opt.textContent = `Room ${r} ${(data.room_styles && data.room_styles[r]) || window.currentDebateStyle}`;
+          if (r == currentRoom) opt.selected = true;
+          select.appendChild(opt);
         });
-        cont.appendChild(diagram);
-
-        const judges = document.createElement('div');
-        judges.className = 'judges-row mt-3';
-        slots.filter(s => s.role.startsWith('Judge'))
-          .forEach(s => judges.appendChild(createBadge(s)));
-        cont.appendChild(judges);
+        select.addEventListener('change', () => {
+          currentRoom = parseInt(select.value, 10);
+          renderRoomGraphic(diagramCont, data, currentRoom);
+        });
+        cont.appendChild(select);
       }
 
+      const diagramCont = document.createElement('div');
+      cont.appendChild(diagramCont);
+
+      renderRoomGraphic(diagramCont, data, currentRoom);
       cont.style.display = 'block';
     });
 }
@@ -241,8 +262,18 @@ socket.on('debate_status', data => {
 
 socket.on('assignments_ready', data => {
   if (data.debate_id !== window.currentDebateId) return;
-  if (window.userHasSlot === true || window.userHasSlot === 'true') {
-    populateGraphic();
+  fetch('/dashboard/debates_json')
+    .then(r => r.json())
+    .then(json => {
+      updateCurrentDebate(json.current_debate);
+    });
+});
+
+socket.on('topic_list_update', data => {
+  if (data.debate_id !== window.currentDebateId) return;
+  const voteBox = document.getElementById('voteBoxContainer');
+  if (voteBox && (window.votingOpen === true || window.votingOpen === 'true')) {
+    populateVoteBox();
   }
 });
 
