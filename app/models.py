@@ -45,14 +45,26 @@ class User(UserMixin, db.Model):
     judge_skill = db.Column(db.String(16), nullable=True)
     debate_count = db.Column(db.Integer, default=0)
     last_seen = db.Column(db.DateTime, default=datetime.utcnow)
+    elo_rating = db.Column(db.Integer, default=1000)
 
     # Relationship: which votes has this user cast?
     votes = db.relationship('Vote', back_populates='user', cascade='all, delete-orphan')
     slots = db.relationship('SpeakerSlot', backref='user', lazy='dynamic')
+    opd_results = db.relationship('OpdResult', backref='user', lazy='dynamic')
+    elo_logs = db.relationship('EloLog', backref='user', lazy='dynamic')
     
     def get_slot_for_debate(self, debate_id):
         from app.models import SpeakerSlot
         return SpeakerSlot.query.filter_by(debate_id=debate_id, user_id=self.id).first()
+
+    def recent_opd_results(self, n=5):
+        return OpdResult.query.filter_by(user_id=self.id).order_by(OpdResult.id.desc()).limit(n).all()
+
+    def opd_skill_level(self, n=5):
+        results = self.recent_opd_results(n)
+        if not results:
+            return None
+        return sum(r.points for r in results) / len(results)
 
     def __repr__(self):
         return f'<User {self.first_name} {self.last_name}>'
@@ -157,4 +169,26 @@ class BpRank(db.Model):
     rank = db.Column(db.Integer, nullable=False)
     __table_args__ = (
         db.UniqueConstraint('debate_id', 'team', name='bp_rank_unique'),
+    )
+
+
+class OpdResult(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    debate_id = db.Column(db.Integer, db.ForeignKey('debate.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    points = db.Column(db.Float)
+    __table_args__ = (
+        db.UniqueConstraint('debate_id', 'user_id', name='opd_result_unique'),
+    )
+
+
+class EloLog(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    debate_id = db.Column(db.Integer, db.ForeignKey('debate.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    old_elo = db.Column(db.Float, nullable=False)
+    new_elo = db.Column(db.Float, nullable=False)
+    change = db.Column(db.Float, nullable=False)
+    __table_args__ = (
+        db.UniqueConstraint('debate_id', 'user_id', name='elo_log_unique'),
     )
