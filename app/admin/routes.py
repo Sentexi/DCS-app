@@ -76,6 +76,7 @@ def add_topic(debate_id):
         topic = Topic(text=text, debate_id=debate_id)
         db.session.add(topic)
         db.session.commit()
+        socketio.emit('topic_list_update', {'debate_id': debate_id})
         flash('Topic added.', 'success')
         return redirect(url_for('admin.admin_dashboard'))
     return render_template('admin/add_topic.html', debate=debate)
