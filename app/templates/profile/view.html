@@ -21,4 +21,14 @@
 <p><strong>Debate Skill:</strong> {{ current_user.debate_skill or '—' }}</p>
 <p><strong>Judge Skill:</strong> {{ current_user.judge_skill or '—' }}</p>
 <p><strong>Debates Participated:</strong> {{ current_user.debate_count or 0 }}</p>
+<p><strong>Elo Rating:</strong> {{ current_user.elo_rating }}</p>
+{% set recent = current_user.recent_opd_results() %}
+{% if recent %}
+<h5 class="mt-4">Recent Results</h5>
+<ul>
+  {% for r in recent %}
+    <li>Debate {{ r.debate_id }}: {{ '%.1f'|format(r.points) }} pts</li>
+  {% endfor %}
+</ul>
+{% endif %}
 {% endblock %}
