@@ -1,11 +1,23 @@
 /* typography & base */
 .diagram-opd,
 .diagram-bp {display:flex;flex-wrap:wrap;flex-direction:column;gap:1rem;margin-bottom:2rem}
-.bench      {flex:1 1 100%;padding:1rem;border-radius:.5rem}
-.free-area  {flex:1 1 0;text-align:center;min-width:150px;background:#f8f9fa;border-radius:.5rem;padding:.75rem;margin-bottom:1rem}
+.bench      {flex:1 1 100%;padding-top:3rem;padding-bottom:3rem;position:relative;border-radius:.5rem}
+.free-area  {flex:1 1 0;text-align:center;min-width:150px;background:#f8f9fa;border-radius:.5rem;padding:.75rem;margin-bottom:1rem;transform:perspective(600px) rotateX(4deg)}
 .gov-bench  {background:#e7f3ff}
 .opp-bench  {background:#ffe7e7}
-.bench-title{font-weight:600;margin-bottom:.5rem}
+.bench::before{content:"";position:absolute;inset:0;border-radius:.5rem;background:inherit;transform:perspective(600px) rotateX(4deg);box-shadow:0 2px 6px rgba(0,0,0,.1);z-index:0}
+.bench-title{font-weight:600;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);margin:0;z-index:1}
+
+.bench .role-badge{position:absolute;z-index:1;transform:translate(-50%,-50%)}
+.gov-bench .role-badge{background:#d0e7ff}
+.opp-bench .role-badge{background:#ffd0d0}
+.free-area .role-badge{background:#ececec}
+.gov-bench .role-badge:nth-of-type(1){top:-0.5rem;left:20%}
+.gov-bench .role-badge:nth-of-type(2){top:-0.5rem;left:50%}
+.gov-bench .role-badge:nth-of-type(3){top:-0.5rem;left:80%}
+.opp-bench .role-badge:nth-of-type(1){bottom:-0.5rem;left:20%}
+.opp-bench .role-badge:nth-of-type(2){bottom:-0.5rem;left:50%}
+.opp-bench .role-badge:nth-of-type(3){bottom:-0.5rem;left:80%}
 
 .role-badge{display:inline-block;padding:.35rem .6rem;font-size:.9rem;
   line-height:1.2;border-radius:1rem;background:#dee2e6}

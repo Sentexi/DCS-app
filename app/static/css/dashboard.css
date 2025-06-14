@@ -18,3 +18,14 @@
 #graphicContainer {
   width: 100%;
 }
+
+#voteProgressHeader {
+  transition: width 0.3s ease;
+}
+
+.sticky-judge {
+  position: fixed;
+  bottom: 1rem;
+  right: 1rem;
+  z-index: 1040;
+}

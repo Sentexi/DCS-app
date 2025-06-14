@@ -17,6 +17,12 @@
   window.userIsJudgeChair = {{ 'true' if is_judge_chair else 'false' }};
 </script>
 
+<div id="headerProgressWrap" class="position-fixed top-0 start-0 w-100" style="z-index:1040;">
+  <div id="voteProgressHeader" class="progress" style="height:4px; display:none;">
+    <div class="progress-bar bg-success" style="width: {{ vote_percent or 0 }}%;" aria-valuemin="0" aria-valuemax="100"></div>
+  </div>
+</div>
+
 <div class="container my-4">
 
   <!-- Welcome Banner -->
@@ -50,7 +56,7 @@
         <div id="graphicContainer" class="mt-3"{% if not current_debate or not current_debate.assignment_complete or not user_role %} style="display:none"{% endif %}></div>
       </div>
       <a id="judgingButton"
-         class="btn btn-warning mt-3{% if current_debate and not current_debate.active %} disabled{% endif %}"
+         class="btn btn-warning mt-3 sticky-judge{% if current_debate and not current_debate.active %} disabled{% endif %}"
          {% if current_debate and current_debate.active %}href="{{ url_for('debate.judging', debate_id=current_debate.id) }}"{% endif %}
          {% if not current_debate or not current_debate.assignment_complete or not is_judge_chair %}style="display:none"{% elif current_debate and not current_debate.active %} aria-disabled="true"{% endif %}>Judging</a>
       <p id="noDebateMessage" class="text-muted"{% if current_debate %} style="display:none"{% endif %}>No active debate at the moment.</p>

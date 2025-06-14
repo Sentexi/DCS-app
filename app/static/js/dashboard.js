@@ -222,6 +222,9 @@ document.addEventListener('DOMContentLoaded', () => {
       judgeBtn.style.display = 'none';
     }
   }
+
+  const headerBar = document.querySelector('#voteProgressHeader');
+  if (headerBar) headerBar.style.display = window.currentDebateId ? 'block' : 'none';
 });
 
 socket.on('vote_update', data => {
@@ -232,12 +235,14 @@ socket.on('vote_update', data => {
   const totalUsers = data.vote_data.total_users;
   const percent = totalUsers > 0 ? Math.round((votedUsers / totalUsers) * 100) : 0;
 
-  const progressBar = document.querySelector('.progress-bar');
-  if (progressBar) {
-    progressBar.style.width = percent + '%';
-    progressBar.setAttribute('aria-valuenow', percent);
-    progressBar.textContent = `${votedUsers}/${totalUsers}`;
-  }
+  const bars = document.querySelectorAll('#voteProgress .progress-bar, #voteProgressHeader .progress-bar');
+  bars.forEach(bar => {
+    bar.style.width = percent + '%';
+    bar.setAttribute('aria-valuenow', percent);
+    if (bar.parentElement.id !== 'voteProgressHeader') {
+      bar.textContent = `${votedUsers}/${totalUsers}`;
+    }
+  });
 
   document.querySelectorAll('.text-muted').forEach(el => {
     if (el.textContent.includes('have voted')) {
@@ -299,8 +304,11 @@ function updateCurrentDebate(data) {
 
   const progress = document.getElementById('voteProgress');
   const progressBar = document.querySelector('#voteProgress .progress-bar');
+  const headerBar = document.querySelector('#voteProgressHeader');
+  const headerInner = document.querySelector('#voteProgressHeader .progress-bar');
   const infoWrap = document.getElementById('voteInfo');
   if (progress) progress.style.display = data ? 'block' : 'none';
+  if (headerBar) headerBar.style.display = data ? 'block' : 'none';
   if (infoWrap) infoWrap.style.display = data ? 'flex' : 'none';
   if (data && progressBar && infoWrap) {
     progressBar.style.width = data.vote_percent + '%';
@@ -311,6 +319,10 @@ function updateCurrentDebate(data) {
       smalls[0].textContent = `${data.votes_cast}/${data.votes_total} have voted`;
       smalls[1].textContent = data.vote_percent + '%';
     }
+  }
+  if (data && headerInner) {
+    headerInner.style.width = data.vote_percent + '%';
+    headerInner.setAttribute('aria-valuenow', data.vote_percent);
   }
 
   const roleEl = document.querySelector('.current-debate .fw-bold.text-primary');
