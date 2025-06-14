@@ -115,7 +115,16 @@ def finalize(debate_id):
     OpdResult.query.filter_by(debate_id=debate_id).delete()
     EloLog.query.filter_by(debate_id=debate_id).delete()
 
-    if debate.style == 'OPD':
+    room_style = debate.style
+    if debate.style == 'Dynamic':
+        roles = {sp.role.split('-')[0] for sp in speaker_slots}
+        opd_markers = {'Gov', 'Opp'}
+        if roles & opd_markers or any(r.startswith('Free') for r in roles):
+            room_style = 'OPD'
+        else:
+            room_style = 'BP'
+
+    if room_style == 'OPD':
         for sp in speaker_slots:
             avg = db.session.query(db.func.avg(Score.value)).filter(
                 Score.debate_id == debate_id,
