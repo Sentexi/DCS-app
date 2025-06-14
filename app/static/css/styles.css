@@ -1,0 +1,26 @@
+:root {
+  --gov-color: #e6f2ff;
+  --opp-color: #ffe6e6;
+  --judge-color: #fff4d6;
+  --free-color: #f8f9fa;
+  --spacing-unit: 8px;
+}
+body {
+  font-family: 'Inter', sans-serif;
+  line-height: 1.5;
+}
+
+.vote-progress-fixed {
+  position: fixed;
+  top: var(--spacing-unit);
+  right: var(--spacing-unit);
+  width: 200px;
+  z-index: 1030;
+}
+.vote-progress-fixed .progress-bar {
+  transition: width 0.3s ease;
+}
+.role-badge.gov { background: var(--gov-color); }
+.role-badge.opp { background: var(--opp-color); }
+.role-badge.judge { background: var(--judge-color); }
+.role-badge.free { background: var(--free-color); }

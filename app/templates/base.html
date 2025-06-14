@@ -6,7 +6,11 @@
     <title>{% block title %}Debate App{% endblock %}</title>
 
     <!-- Global CSS -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
 
     <!-- Page-specific CSS -->
     {% block extra_head %}{% endblock %}
@@ -19,18 +23,25 @@
       <span class="navbar-toggler-icon"></span>
     </button>
     <div class="collapse navbar-collapse" id="navbarNav">
-      <ul class="navbar-nav ms-auto">
+      <ul class="navbar-nav ms-auto align-items-center">
         <li class="nav-item">
-          <a class="nav-link" href="{{ url_for('profile.view') }}">Profile</a>
+          <button id="themeToggle" class="btn btn-outline-secondary btn-sm me-2" type="button">
+            <i class="bi bi-moon-fill"></i>
+          </button>
         </li>
-        {% if current_user.is_authenticated and current_user.is_admin %}
-        <li class="nav-item">
-          <a class="nav-link" href="{{ url_for('admin.admin_dashboard') }}">Admin</a>
-        </li>
-        {% endif %}
         {% if current_user.is_authenticated %}
-        <li class="nav-item">
-          <a class="nav-link" href="{{ url_for('auth.logout') }}">Logout</a>
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" id="userMenu" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+            {{ current_user.first_name }}
+          </a>
+          <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userMenu">
+            <li><a class="dropdown-item" href="{{ url_for('profile.view') }}">Profile</a></li>
+            {% if current_user.is_admin %}
+            <li><a class="dropdown-item" href="{{ url_for('admin.admin_dashboard') }}">Admin</a></li>
+            {% endif %}
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}">Logout</a></li>
+          </ul>
         </li>
         {% endif %}
       </ul>
@@ -56,6 +67,16 @@
 <!-- Global JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<script>
+  const storedTheme = localStorage.getItem('theme') || 'light';
+  document.documentElement.setAttribute('data-bs-theme', storedTheme);
+  document.getElementById('themeToggle')?.addEventListener('click', () => {
+    const current = document.documentElement.getAttribute('data-bs-theme');
+    const next = current === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-bs-theme', next);
+    localStorage.setItem('theme', next);
+  });
+</script>
 
 <!-- Page-specific JS -->
 {% block extra_js %}{% endblock %}

@@ -18,3 +18,14 @@
 #graphicContainer {
   width: 100%;
 }
+
+.vote-progress-fixed {
+  position: fixed;
+  top: var(--spacing-unit);
+  right: var(--spacing-unit);
+  width: 200px;
+  z-index: 1030;
+}
+.vote-progress-fixed .progress-bar {
+  transition: width 0.3s ease;
+}

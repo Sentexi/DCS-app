@@ -19,6 +19,12 @@
 
 <div class="container my-4">
 
+  <div id="fixedProgress" class="vote-progress-fixed" style="display:{% if current_debate %}block{% else %}none{% endif %};">
+    <div class="progress" style="height:1rem;">
+      <div class="progress-bar bg-success" style="width: {{ vote_percent or 0 }}%;" aria-valuenow="{{ vote_percent or 0 }}" aria-valuemin="0" aria-valuemax="100"></div>
+    </div>
+  </div>
+
   <!-- Welcome Banner -->
   <div class="mb-4 text-center">
     <h2>Welcome, {{ current_user.first_name }} {{ current_user.last_name }}!</h2>

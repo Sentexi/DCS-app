@@ -56,8 +56,14 @@ function createBadge(slot) {
   const span = document.createElement('span');
   span.classList.add('role-badge');
   if (slot.user_id == window.currentUserId) span.classList.add('me');
+  if (slot.role.startsWith('Judge')) span.classList.add('judge');
+  else if (slot.role.startsWith('Free')) span.classList.add('free');
+  else if (['Gov', 'OG', 'CG'].includes(slot.role)) span.classList.add('gov');
+  else span.classList.add('opp');
   span.setAttribute('role', 'listitem');
   span.setAttribute('aria-label', `${slot.role} – ${slot.name}`);
+  span.setAttribute('data-bs-toggle', 'tooltip');
+  span.setAttribute('title', `${slot.name} (${slot.role})`);
 
   const icon = document.createElement('i');
   icon.classList.add('bi');
@@ -158,6 +164,7 @@ function renderRoomGraphic(cont, data, room) {
   cont.appendChild(diagram);
   cont.appendChild(judges);
   cont.style.display = 'block';
+  document.querySelectorAll('#graphicContainer [data-bs-toggle="tooltip"]').forEach(el => new bootstrap.Tooltip(el));
 }
 
 function populateGraphic() {
@@ -222,6 +229,8 @@ document.addEventListener('DOMContentLoaded', () => {
       judgeBtn.style.display = 'none';
     }
   }
+
+  document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => new bootstrap.Tooltip(el));
 });
 
 socket.on('vote_update', data => {
@@ -232,12 +241,11 @@ socket.on('vote_update', data => {
   const totalUsers = data.vote_data.total_users;
   const percent = totalUsers > 0 ? Math.round((votedUsers / totalUsers) * 100) : 0;
 
-  const progressBar = document.querySelector('.progress-bar');
-  if (progressBar) {
-    progressBar.style.width = percent + '%';
-    progressBar.setAttribute('aria-valuenow', percent);
-    progressBar.textContent = `${votedUsers}/${totalUsers}`;
-  }
+  document.querySelectorAll('#voteProgress .progress-bar, #fixedProgress .progress-bar').forEach(bar => {
+    bar.style.width = percent + '%';
+    bar.setAttribute('aria-valuenow', percent);
+    bar.textContent = `${votedUsers}/${totalUsers}`;
+  });
 
   document.querySelectorAll('.text-muted').forEach(el => {
     if (el.textContent.includes('have voted')) {
@@ -298,14 +306,18 @@ function updateCurrentDebate(data) {
   }
 
   const progress = document.getElementById('voteProgress');
-  const progressBar = document.querySelector('#voteProgress .progress-bar');
+  const progressBars = document.querySelectorAll('#voteProgress .progress-bar, #fixedProgress .progress-bar');
   const infoWrap = document.getElementById('voteInfo');
+  const fixedProgress = document.getElementById('fixedProgress');
   if (progress) progress.style.display = data ? 'block' : 'none';
+  if (fixedProgress) fixedProgress.style.display = data ? 'block' : 'none';
   if (infoWrap) infoWrap.style.display = data ? 'flex' : 'none';
-  if (data && progressBar && infoWrap) {
-    progressBar.style.width = data.vote_percent + '%';
-    progressBar.setAttribute('aria-valuenow', data.vote_percent);
-    progressBar.textContent = `${data.votes_cast}/${data.votes_total}`;
+  if (data && infoWrap) {
+    progressBars.forEach(bar => {
+      bar.style.width = data.vote_percent + '%';
+      bar.setAttribute('aria-valuenow', data.vote_percent);
+      bar.textContent = `${data.votes_cast}/${data.votes_total}`;
+    });
     const smalls = infoWrap.querySelectorAll('small.text-muted');
     if (smalls.length >= 2) {
       smalls[0].textContent = `${data.votes_cast}/${data.votes_total} have voted`;

@@ -1,21 +1,24 @@
 /* typography & base */
 .diagram-opd,
 .diagram-bp {display:flex;flex-wrap:wrap;flex-direction:column;gap:1rem;margin-bottom:2rem}
-.bench      {flex:1 1 100%;padding:1rem;border-radius:.5rem}
-.free-area  {flex:1 1 0;text-align:center;min-width:150px;background:#f8f9fa;border-radius:.5rem;padding:.75rem;margin-bottom:1rem}
-.gov-bench  {background:#e7f3ff}
-.opp-bench  {background:#ffe7e7}
+.bench      {flex:1 1 100%;padding:1rem;border-radius:.5rem;position:relative;transform:perspective(600px) rotateX(10deg);box-shadow:0 2px 4px rgba(0,0,0,0.1)}
+.free-area  {flex:1 1 0;text-align:center;min-width:150px;background:var(--free-color);border-radius:.5rem;padding:.75rem;margin-bottom:1rem}
+.gov-bench  {background:var(--gov-color)}
+.opp-bench  {background:var(--opp-color)}
 .bench-title{font-weight:600;margin-bottom:.5rem}
 
 .role-badge{display:inline-block;padding:.35rem .6rem;font-size:.9rem;
   line-height:1.2;border-radius:1rem;background:#dee2e6}
+.role-badge.gov{background:var(--gov-color)}
+.role-badge.opp{background:var(--opp-color)}
+.role-badge.judge{background:var(--judge-color)}
+.role-badge.free{background:var(--free-color)}
 .role-badge.me{box-shadow:0 0 0 2px var(--bs-success)}
 .bp-team-card{flex:1 1 calc(25% - .75rem);background:#f8f9fa;padding:.75rem;
   border-radius:.5rem;text-align:center}
 .bp-title{font-weight:600;margin-bottom:.25rem}
 .placeholder{opacity:.5;font-size:.85rem}
 .judges-row{display:flex;gap:.5rem;flex-wrap:wrap;overflow-x:auto}
-.judges-row .role-badge{background:#cfe2ff}
 
 @media (min-width:768px){
   .bench{flex:1 1 calc(50% - .75rem);min-width:180px}
