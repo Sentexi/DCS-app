@@ -70,7 +70,10 @@ class User(UserMixin, db.Model):
     def update_opd_skill(self, n=5):
         results = (
             OpdResult.query.join(Debate, OpdResult.debate_id == Debate.id)
-            .filter(OpdResult.user_id == self.id, Debate.style == 'OPD')
+            .filter(
+                OpdResult.user_id == self.id,
+                Debate.style.in_(("OPD", "Dynamic"))
+            )
             .order_by(OpdResult.id.desc())
             .limit(n)
             .all()
@@ -84,7 +87,7 @@ class User(UserMixin, db.Model):
     def opd_result_count(self):
         return OpdResult.query.join(Debate, OpdResult.debate_id == Debate.id).filter(
             OpdResult.user_id == self.id,
-            Debate.style == 'OPD'
+            Debate.style.in_(("OPD", "Dynamic"))
         ).count()
 
     def __repr__(self):
