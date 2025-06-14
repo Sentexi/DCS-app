@@ -31,6 +31,15 @@ class JudgeSkillEnum(db.Enum):
     chair = 'Chair'
 
 
+class PendingUser(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    first_name = db.Column(db.String(80), nullable=False)
+    last_name = db.Column(db.String(80))
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    password = db.Column(db.String(256), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
 # User model: represents app users (debaters, admins, etc.)
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)

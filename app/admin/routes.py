@@ -214,6 +214,41 @@ def manage_users():
     users = User.query.all()
     return render_template('admin/users.html', users=users)
 
+
+@admin_bp.route('/admin/pending_users')
+@login_required
+@admin_required
+def manage_pending_users():
+    from app.models import PendingUser
+    pending = PendingUser.query.all()
+    return render_template('admin/pending_users.html', pending_users=pending)
+
+
+@admin_bp.route('/admin/pending_users/<int:pending_id>/confirm', methods=['POST'])
+@login_required
+@admin_required
+def confirm_pending_user(pending_id):
+    from app.models import PendingUser, User
+    p = PendingUser.query.get_or_404(pending_id)
+    user = User(first_name=p.first_name, last_name=p.last_name, email=p.email, password=p.password)
+    db.session.add(user)
+    db.session.delete(p)
+    db.session.commit()
+    flash('User confirmed.', 'success')
+    return redirect(url_for('admin.manage_pending_users'))
+
+
+@admin_bp.route('/admin/pending_users/<int:pending_id>/delete', methods=['POST'])
+@login_required
+@admin_required
+def delete_pending_user(pending_id):
+    from app.models import PendingUser
+    p = PendingUser.query.get_or_404(pending_id)
+    db.session.delete(p)
+    db.session.commit()
+    flash('Pending user deleted.', 'info')
+    return redirect(url_for('admin.manage_pending_users'))
+
 @admin_bp.route('/admin/users/<int:user_id>/toggle_admin', methods=['POST'])
 @login_required
 @admin_required

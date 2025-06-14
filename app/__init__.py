@@ -49,7 +49,7 @@ def create_app(config_file=None):
     @app.before_request
     def require_login():
         # These endpoints do NOT require login:
-        open_routes = ['auth.login', 'auth.register', 'static']
+        open_routes = ['auth.login', 'auth.register', 'auth.forgot_password', 'auth.reset_password', 'auth.confirm_email', 'static']
         # If the user is NOT authenticated and is not on a public page
         if (not current_user.is_authenticated
             and request.endpoint not in open_routes
