@@ -24,7 +24,7 @@
           {% for slot in slots %}
             <tr>
               <td>{{ slot.role }}</td>
-              <td>{{ user_map[slot.user_id].username }}</td>
+              <td>{{ user_map[slot.user_id].first_name }} {{ user_map[slot.user_id].last_name }}</td>
               <td>{{ user_map[slot.user_id].debate_skill }}</td>
               <td>{{ user_map[slot.user_id].judge_skill }}</td>
             </tr>

@@ -57,7 +57,7 @@ function createBadge(slot) {
   span.classList.add('role-badge');
   if (slot.user_id == window.currentUserId) span.classList.add('me');
   span.setAttribute('role', 'listitem');
-  span.setAttribute('aria-label', `${slot.role} – ${slot.username}`);
+  span.setAttribute('aria-label', `${slot.role} – ${slot.name}`);
 
   const icon = document.createElement('i');
   icon.classList.add('bi');
@@ -69,7 +69,7 @@ function createBadge(slot) {
 
   span.appendChild(document.createTextNode(` ${slot.role}`));
   span.appendChild(document.createElement('br'));
-  span.appendChild(document.createTextNode(slot.username));
+  span.appendChild(document.createTextNode(slot.name));
   if (slot.user_id == window.currentUserId) {
     const em = document.createElement('em');
     em.textContent = ' (You)';

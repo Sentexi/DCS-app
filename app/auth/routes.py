@@ -19,18 +19,23 @@ def register():
     if current_user.is_authenticated:
         return redirect(url_for('main.dashboard'))
     if request.method == 'POST':
-        username = request.form['username']
+        first_name = request.form['first_name']
+        last_name = request.form.get('last_name')
         email = request.form['email']
         password = request.form['password']
+        password2 = request.form['password2']
         # Basic validation (expand as needed)
-        if User.query.filter_by(username=username).first():
-            flash('Username already exists.')
+        if User.query.filter_by(first_name=first_name, last_name=last_name).first():
+            flash('User with that name already exists.')
             return redirect(url_for('auth.register'))
         if User.query.filter_by(email=email).first():
             flash('Email already registered.')
             return redirect(url_for('auth.register'))
+        if password != password2:
+            flash('Passwords do not match.')
+            return redirect(url_for('auth.register'))
         hashed_pw = generate_password_hash(password)
-        user = User(username=username, email=email, password=hashed_pw)
+        user = User(first_name=first_name, last_name=last_name, email=email, password=hashed_pw)
         db.session.add(user)
         db.session.commit()
         flash('Registration successful! Please log in.')

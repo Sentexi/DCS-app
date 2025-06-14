@@ -10,12 +10,14 @@ def create_initial_admin():
         db.create_all()
         if not User.query.filter_by(is_admin=True).first():
             # Change credentials as needed!
-            username = 'admin'
+            first_name = 'Admin'
+            last_name = 'User'
             email = 'admin@example.com'
             password = 'admin123'
             if not User.query.filter_by(email=email).first():
                 admin = User(
-                    username=username,
+                    first_name=first_name,
+                    last_name=last_name,
                     email=email,
                     password=generate_password_hash(password),
                     is_admin=True

@@ -6,8 +6,8 @@
   <h4>Participants Grouped by Skill</h4>
   <ul>
   {% for skill, users in groups.items() %}
-    <li><strong>{{ skill }} ({{ users|length }})</strong>: 
-        {% for u in users %}{{ u.username }}{% if not loop.last %}, {% endif %}{% endfor %}
+    <li><strong>{{ skill }} ({{ users|length }})</strong>:
+        {% for u in users %}{{ u.first_name }} {{ u.last_name }}{% if not loop.last %}, {% endif %}{% endfor %}
     </li>
   {% endfor %}
   </ul>
