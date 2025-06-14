@@ -1,1 +1,1 @@
-python3 wsgi.py
+python3 start.py
