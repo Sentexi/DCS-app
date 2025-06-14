@@ -46,6 +46,7 @@ class User(UserMixin, db.Model):
     debate_count = db.Column(db.Integer, default=0)
     last_seen = db.Column(db.DateTime, default=datetime.utcnow)
     elo_rating = db.Column(db.Integer, default=1000)
+    opd_skill = db.Column(db.Float, nullable=True)
 
     # Relationship: which votes has this user cast?
     votes = db.relationship('Vote', back_populates='user', cascade='all, delete-orphan')
@@ -65,6 +66,26 @@ class User(UserMixin, db.Model):
         if not results:
             return None
         return sum(r.points for r in results) / len(results)
+
+    def update_opd_skill(self, n=5):
+        results = (
+            OpdResult.query.join(Debate, OpdResult.debate_id == Debate.id)
+            .filter(OpdResult.user_id == self.id, Debate.style == 'OPD')
+            .order_by(OpdResult.id.desc())
+            .limit(n)
+            .all()
+        )
+        if len(results) < n:
+            self.opd_skill = None
+        else:
+            self.opd_skill = sum(r.points for r in results) / n
+        return len(results)
+
+    def opd_result_count(self):
+        return OpdResult.query.join(Debate, OpdResult.debate_id == Debate.id).filter(
+            OpdResult.user_id == self.id,
+            Debate.style == 'OPD'
+        ).count()
 
     def __repr__(self):
         return f'<User {self.first_name} {self.last_name}>'
