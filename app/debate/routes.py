@@ -19,6 +19,9 @@ def get_chair_slot(user, debate_id):
 @login_required
 def judging(debate_id):
     debate = Debate.query.get_or_404(debate_id)
+    if not debate.active:
+        flash('This debate is inactive.', 'warning')
+        return redirect(url_for('main.debate_view', debate_id=debate_id))
     chair_slot = get_chair_slot(current_user, debate_id)
     if not chair_slot:
         flash('Only the chair judge can access this page.', 'danger')

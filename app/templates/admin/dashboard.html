@@ -21,6 +21,9 @@
           <span class="badge {% if debate.voting_open %}bg-success{% else %}bg-danger{% endif %} ms-2">
             {% if debate.voting_open %}Voting Open{% else %}Voting Closed{% endif %}
           </span>
+          <span class="badge {% if debate.active %}bg-primary{% else %}bg-secondary{% endif %} ms-2">
+            {% if debate.active %}Active{% else %}Inactive{% endif %}
+          </span>
         </button>
       </h2>
       <div id="collapse{{ debate.id }}" class="accordion-collapse collapse" aria-labelledby="heading{{ debate.id }}" data-bs-parent="#debateAccordion">

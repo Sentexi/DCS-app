@@ -43,7 +43,11 @@
     </a>
     {% set my_slot = current_user.get_slot_for_debate(debate.id) %}
     {% if my_slot and my_slot.role == 'Judge-Chair' %}
-      <a href="{{ url_for('debate.judging', debate_id=debate.id) }}" class="btn btn-warning mt-3">Judging</a>
+      {% if debate.active %}
+        <a href="{{ url_for('debate.judging', debate_id=debate.id) }}" class="btn btn-warning mt-3">Judging</a>
+      {% else %}
+        <a class="btn btn-warning mt-3 disabled" aria-disabled="true">Judging</a>
+      {% endif %}
     {% endif %}
 {% endif %}
 {% endblock %}
