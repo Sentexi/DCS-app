@@ -21,14 +21,53 @@
 <p><strong>Debate Skill:</strong> {{ current_user.debate_skill or '—' }}</p>
 <p><strong>Judge Skill:</strong> {{ current_user.judge_skill or '—' }}</p>
 <p><strong>Debates Participated:</strong> {{ current_user.debate_count or 0 }}</p>
-<p><strong>Elo Rating:</strong> {{ current_user.elo_rating }}</p>
-{% set recent = current_user.recent_opd_results() %}
-{% if recent %}
-<h5 class="mt-4">Recent Results</h5>
-<ul>
-  {% for r in recent %}
-    <li>Debate {{ r.debate_id }}: {{ '%.1f'|format(r.points) }} pts</li>
+<p><strong>BP Ranking:</strong> {{ current_user.elo_rating }}</p>
+<p><strong>OPD Skill:</strong>
+  {% if opd_result_count == 0 %}
+    None
+  {% elif opd_result_count < 5 %}
+    {{ 5 - opd_result_count }} debates until ranked
+  {% else %}
+    {{ '%.1f'|format(current_user.opd_skill) }}
+  {% endif %}
+</p>
+{% if recent_debates %}
+<h5 class="mt-4">Recent Debates</h5>
+<ul id="debateList" class="list-group mb-2">
+  {% for item in recent_debates %}
+    <li class="list-group-item debate-item" style="display:none;">
+      <strong>{{ item.debate.title }}</strong> ({{ item.debate.style }}) -
+      {% if item.debate.style == 'BP' %}
+        Place {{ item.rank or '?' }}, Elo {{ '%+.1f'|format(item.elo_change or 0) }}
+      {% else %}
+        {{ '%.1f pts'|format(item.points) }}
+      {% endif %}
+    </li>
   {% endfor %}
 </ul>
+<div class="d-flex justify-content-between mb-3">
+  <button id="prevPage" class="btn btn-secondary btn-sm">Prev</button>
+  <button id="nextPage" class="btn btn-secondary btn-sm">Next</button>
+</div>
 {% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  const items = document.querySelectorAll('#debateList .debate-item');
+  let page = 0;
+  const pageSize = 5;
+  function showPage() {
+    items.forEach((el, i) => {
+      el.style.display = (i >= page * pageSize && i < (page + 1) * pageSize) ? '' : 'none';
+    });
+  }
+  document.getElementById('prevPage')?.addEventListener('click', () => {
+    if (page > 0) { page--; showPage(); }
+  });
+  document.getElementById('nextPage')?.addEventListener('click', () => {
+    if ((page + 1) * pageSize < items.length) { page++; showPage(); }
+  });
+  showPage();
+</script>
 {% endblock %}
