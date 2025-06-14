@@ -195,6 +195,7 @@ function populateGraphic() {
       cont.appendChild(diagramCont);
 
       renderRoomGraphic(diagramCont, data, currentRoom);
+      cont.style.display = 'block';
     });
 }
 
