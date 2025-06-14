@@ -257,7 +257,7 @@ def debate_assignments_json(debate_id):
             'role': s.role,
             'room': s.room,
             'user_id': s.user_id,
-            'username': s.user.username
+            'name': f"{s.user.first_name} {s.user.last_name}"
         } for s in slots
     ]
 

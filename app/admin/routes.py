@@ -221,7 +221,7 @@ def toggle_user_admin(user_id):
     user = User.query.get_or_404(user_id)
     user.is_admin = not user.is_admin
     db.session.commit()
-    flash(f"User '{user.username}' admin status changed.", "info")
+    flash(f"User '{user.first_name} {user.last_name}' admin status changed.", "info")
     return redirect(url_for('admin.manage_users'))
     
 @admin_bp.route('/admin/<int:debate_id>/assign', methods=['POST'])

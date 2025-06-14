@@ -1,7 +1,7 @@
 {# Re-usable badge component #}
 <span class="role-badge {{ 'me' if user.id == slot.user_id else '' }}"
       role="listitem"
-      aria-label="{{ slot.role }} – {{ slot.user.username }}">
+      aria-label="{{ slot.role }} – {{ slot.user.first_name }} {{ slot.user.last_name }}">
   {% if slot.role.startswith('Judge') %}
     <i class="bi bi-gavel"></i>
   {% elif slot.role.startswith('Free') %}
@@ -12,5 +12,5 @@
     <i class="bi bi-patch-question"></i>
   {% endif %}
   {{ slot.role }}<br>
-  {{ slot.user.username }}{% if user.id == slot.user_id %} <em>(You)</em>{% endif %}
+  {{ slot.user.first_name }} {{ slot.user.last_name }}{% if user.id == slot.user_id %} <em>(You)</em>{% endif %}
 </span>

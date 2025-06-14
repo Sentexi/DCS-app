@@ -34,7 +34,8 @@ class JudgeSkillEnum(db.Enum):
 # User model: represents app users (debaters, admins, etc.)
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(80), unique=True, nullable=False)
+    first_name = db.Column(db.String(80), nullable=False)
+    last_name = db.Column(db.String(80), nullable=True)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password = db.Column(db.String(256), nullable=False)  # hashed password
     is_admin = db.Column(db.Boolean, default=False)
@@ -54,7 +55,7 @@ class User(UserMixin, db.Model):
         return SpeakerSlot.query.filter_by(debate_id=debate_id, user_id=self.id).first()
 
     def __repr__(self):
-        return f'<User {self.username}>'
+        return f'<User {self.first_name} {self.last_name}>'
 
 # Debate model: stores debate event details
 class Debate(db.Model):

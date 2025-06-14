@@ -8,7 +8,7 @@
       <tr>
         <th>Speaker</th>
         {% for j in judges %}
-          <th>{{ j.user.username }}</th>
+          <th>{{ j.user.first_name }} {{ j.user.last_name }}</th>
         {% endfor %}
         <th>Average</th>
       </tr>
@@ -16,7 +16,7 @@
     <tbody>
       {% for sp in speakers %}
       <tr data-role="{{ sp.role }}" data-sid="{{ sp.id }}">
-        <td>{{ sp.user.username }} <small class="text-muted">({{ sp.role }})</small></td>
+        <td>{{ sp.user.first_name }} {{ sp.user.last_name }} <small class="text-muted">({{ sp.role }})</small></td>
         {% for j in judges %}
           <td><input type="number" min="0" max="100" step="1" name="score_{{ sp.id }}_{{ j.id }}" class="form-control score-input" value="{{ scores.get((sp.user_id, j.user_id), '') }}"></td>
         {% endfor %}
