@@ -1,6 +1,7 @@
 # app/__init__.py
 from datetime import datetime, timedelta
 from flask import Flask, request, redirect, url_for
+from config import Config
 from .extensions import db, login_manager, migrate
 from .models import Debate, Topic, Vote, User
 from flask_login import current_user
@@ -11,18 +12,19 @@ socketio = SocketIO()  # Create the SocketIO object globally
 
 def create_app(config_file=None):
     app = Flask(__name__)
-    
-    socketio.init_app(app)
-    
+
+    # Load configuration
+    app.config.from_object(Config)
+    if config_file:
+        app.config.from_pyfile(config_file)
+
+    # Initialize SocketIO with CORS options
+    socketio.init_app(app, cors_allowed_origins=app.config['CORS_ALLOWED_ORIGINS'])
+
     # Enable a 'startswith' test in our Jinja templates
     app.jinja_env.tests['startswith'] = lambda val, prefix: (
         isinstance(val, str) and val.startswith(prefix)
     )
-
-    # Basic config (you can improve this later)
-    app.config['SECRET_KEY'] = 'dev'  # change in prod!
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///debate_app.db'
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
     # Initialize extensions
     db.init_app(app)

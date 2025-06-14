@@ -12,6 +12,20 @@
 5. Run the app:
     - `python run.py`
 
+## Configuration
+
+These settings can be provided via environment variables or by modifying
+`config.py`:
+
+- **SECRET_KEY** - Flask secret key. Default: `dev`.
+- **SQLALCHEMY_DATABASE_URI** - database connection string.
+  Default: `sqlite:///debate_app.db`.
+- **SQLALCHEMY_TRACK_MODIFICATIONS** - set to `true` to enable change
+  tracking. Default: `False`.
+- **CORS_ALLOWED_ORIGINS** - origins allowed for CORS and SocketIO.
+  Provide a comma-separated list (e.g. `https://example.com`). Default: `*`.
+- **PORT** - port used when running `python run.py`. Default: `5000`.
+
 ## 🚀 Production Deployment with uWSGI
 
 To run the app in a production environment using **uWSGI**, follow these steps:
