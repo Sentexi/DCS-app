@@ -294,6 +294,19 @@ socket.on('topic_list_update', data => {
   }
 });
 
+socket.on('winning_topic', data => {
+  if (data.debate_id !== window.currentDebateId) return;
+  const winEl = document.getElementById('winningTopic');
+  if (winEl) {
+    if (data.topic) {
+      winEl.textContent = `Winning topic: ${data.topic.text}`;
+      winEl.style.display = 'block';
+    } else {
+      winEl.style.display = 'none';
+    }
+  }
+});
+
 function updateCurrentDebate(data) {
   const titleEl = document.querySelector('.current-debate .card-title');
   if (!titleEl) return;
@@ -337,6 +350,16 @@ function updateCurrentDebate(data) {
       roleEl.style.display = 'block';
     } else {
       roleEl.style.display = 'none';
+    }
+  }
+
+  const winEl = document.getElementById('winningTopic');
+  if (winEl) {
+    if (data && data.winner_topic) {
+      winEl.textContent = `Winning topic: ${data.winner_topic.text}`;
+      winEl.style.display = 'block';
+    } else {
+      winEl.style.display = 'none';
     }
   }
 

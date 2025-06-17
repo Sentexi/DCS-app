@@ -42,3 +42,32 @@ def confirm_token(token, salt, expiration=3600):
     except Exception:
         return None
     return email
+from sqlalchemy import func
+from .extensions import db
+from .models import Vote, Topic
+
+def compute_winning_topic(debate):
+    """Return the winning Topic for a debate or None."""
+    if not debate or debate.voting_open or debate.second_voting_open:
+        return None
+    if debate.second_voting_topics:
+        topic_ids = debate.second_topic_ids()
+        round_num = 2
+    else:
+        topic_ids = [t.id for t in debate.topics]
+        round_num = 1
+    if not topic_ids:
+        return None
+    counts = (
+        db.session.query(Vote.topic_id, func.count(Vote.id))
+        .filter(Vote.topic_id.in_(topic_ids), Vote.round == round_num)
+        .group_by(Vote.topic_id)
+        .all()
+    )
+    if not counts:
+        return None
+    max_votes = max(c[1] for c in counts)
+    winners = [tid for tid, c in counts if c == max_votes]
+    if len(winners) == 1:
+        return Topic.query.get(winners[0])
+    return None

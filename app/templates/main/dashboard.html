@@ -45,6 +45,9 @@
         <small class="text-muted">{{ votes_cast or 0 }}/{{ votes_total or 0 }} have voted</small>
         <small class="text-muted">{{ vote_percent or 0 }}%</small>
       </div>
+      <p id="winningTopic" class="mt-2 fw-bold text-success"{% if not winning_topic %} style="display:none"{% endif %}>
+        {% if winning_topic %}Winning topic: {{ winning_topic.text }}{% endif %}
+      </p>
       <p id="userRoleText" class="mt-2 fw-bold text-primary"{% if not user_role %} style="display:none"{% endif %}>You are {{ user_role }}</p>
       <div class="mt-3">
         <div id="voteBoxContainer" class="card p-3 vote-box"{% if not current_debate or not current_debate.voting_open %} style="display:none"{% endif %}></div>
