@@ -178,66 +178,38 @@ function populateGraphic() {
   const cont = document.getElementById('graphicContainer');
   if (!debateId || !cont) return;
 
-  Promise.all([
-    fetch(`/debate/${debateId}/assignments_json`).then(r => r.json()),
-    fetch(`/debate/${debateId}/topics_json`).then(r => r.json())
-  ]).then(([data, topics]) => {
-    const rooms = [...new Set(data.assignments.map(a => a.room))].sort((a, b) => a - b);
-    const mySlot = data.assignments.find(a => a.user_id == window.currentUserId);
-    if (!currentRoom) {
-      currentRoom = mySlot ? mySlot.room : rooms[0];
-    }
-    cont.innerHTML = '';
+  fetch(`/debate/${debateId}/assignments_json`)
+    .then(r => r.json())
+    .then(data => {
+      const rooms = [...new Set(data.assignments.map(a => a.room))].sort((a, b) => a - b);
+      const mySlot = data.assignments.find(a => a.user_id == window.currentUserId);
+      if (!currentRoom) {
+        currentRoom = mySlot ? mySlot.room : rooms[0];
+      }
+      cont.innerHTML = '';
+      if (rooms.length > 1) {
+        const select = document.createElement('select');
+        select.className = 'form-select mb-2';
+        rooms.forEach(r => {
+          const opt = document.createElement('option');
+          opt.value = r;
+          opt.textContent = `Room ${r} ${(data.room_styles && data.room_styles[r]) || window.currentDebateStyle}`;
+          if (r == currentRoom) opt.selected = true;
+          select.appendChild(opt);
+        });
+        select.addEventListener('change', () => {
+          currentRoom = parseInt(select.value, 10);
+          renderRoomGraphic(diagramCont, data, currentRoom);
+        });
+        cont.appendChild(select);
+      }
 
-    if (topics.topics && topics.topics.length) {
-      const topicDiv = document.createElement('div');
-      topicDiv.className = 'topic-list mb-3';
-      const ul = document.createElement('ul');
-      topics.topics.forEach(t => {
-        const li = document.createElement('li');
-        const span = document.createElement('span');
-        span.textContent = t.text + ' ';
-        li.appendChild(span);
-        if (t.factsheet) {
-          const details = document.createElement('details');
-          details.classList.add('d-inline-block', 'ms-2');
-          const summary = document.createElement('summary');
-          summary.textContent = 'Factsheet';
-          details.appendChild(summary);
-          const div = document.createElement('div');
-          div.textContent = t.factsheet;
-          details.appendChild(div);
-          li.appendChild(details);
-        }
-        ul.appendChild(li);
-      });
-      topicDiv.appendChild(ul);
-      cont.appendChild(topicDiv);
-    }
+      const diagramCont = document.createElement('div');
+      cont.appendChild(diagramCont);
 
-    if (rooms.length > 1) {
-      const select = document.createElement('select');
-      select.className = 'form-select mb-2';
-      rooms.forEach(r => {
-        const opt = document.createElement('option');
-        opt.value = r;
-        opt.textContent = `Room ${r} ${(data.room_styles && data.room_styles[r]) || window.currentDebateStyle}`;
-        if (r == currentRoom) opt.selected = true;
-        select.appendChild(opt);
-      });
-      select.addEventListener('change', () => {
-        currentRoom = parseInt(select.value, 10);
-        renderRoomGraphic(diagramCont, data, currentRoom);
-      });
-      cont.appendChild(select);
-    }
-
-    const diagramCont = document.createElement('div');
-    cont.appendChild(diagramCont);
-
-    renderRoomGraphic(diagramCont, data, currentRoom);
-    cont.style.display = 'block';
-  });
+      renderRoomGraphic(diagramCont, data, currentRoom);
+      cont.style.display = 'block';
+    });
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -315,12 +287,6 @@ socket.on('topic_list_update', data => {
   const voteBox = document.getElementById('voteBoxContainer');
   if (voteBox && (window.votingOpen === true || window.votingOpen === 'true')) {
     populateVoteBox();
-  }
-  const graphicCont = document.getElementById('graphicContainer');
-  if (graphicCont &&
-      (window.assignmentsComplete === true || window.assignmentsComplete === 'true') &&
-      (window.userHasSlot === true || window.userHasSlot === 'true')) {
-    populateGraphic();
   }
 });
 
