@@ -13,7 +13,7 @@
           {% if topic.factsheet %}
             <details class="d-inline-block ms-2">
               <summary>Factsheet</summary>
-              {{ topic.factsheet }}
+              <div class="factsheet-content">{{ topic.factsheet }}</div>
             </details>
           {% endif %}
           {% if topic.id in user_votes %}

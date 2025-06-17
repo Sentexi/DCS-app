@@ -193,6 +193,7 @@ def edit_topic(topic_id):
             topic.text = text
             topic.factsheet = factsheet
             db.session.commit()
+            socketio.emit('topic_list_update', {'debate_id': topic.debate_id})
             flash('Topic updated.', 'success')
             return redirect(url_for('admin.admin_dashboard'))
         flash('Invalid input.', 'danger')
@@ -206,6 +207,7 @@ def delete_topic(topic_id):
     topic = Topic.query.get_or_404(topic_id)
     db.session.delete(topic)
     db.session.commit()
+    socketio.emit('topic_list_update', {'debate_id': topic.debate_id})
     flash('Topic deleted.', 'info')
     return redirect(url_for('admin.admin_dashboard'))
 
