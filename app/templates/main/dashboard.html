@@ -45,6 +45,9 @@
         <small class="text-muted">{{ votes_cast or 0 }}/{{ votes_total or 0 }} have voted</small>
         <small class="text-muted">{{ vote_percent or 0 }}%</small>
       </div>
+      <p id="winningFactsheet" class="mt-2 small text-muted factsheet-content"{% if not winning_topic or not winning_topic.factsheet %} style="display:none"{% endif %}>
+        {% if winning_topic and winning_topic.factsheet %}{{ winning_topic.factsheet }}{% endif %}
+      </p>
       <p id="winningTopic" class="mt-2 fw-bold text-success"{% if not winning_topic %} style="display:none"{% endif %}>
         {% if winning_topic %}Winning topic: {{ winning_topic.text }}{% endif %}
       </p>

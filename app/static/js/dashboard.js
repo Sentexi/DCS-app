@@ -297,12 +297,22 @@ socket.on('topic_list_update', data => {
 socket.on('winning_topic', data => {
   if (data.debate_id !== window.currentDebateId) return;
   const winEl = document.getElementById('winningTopic');
+  const factEl = document.getElementById('winningFactsheet');
   if (winEl) {
     if (data.topic) {
       winEl.textContent = `Winning topic: ${data.topic.text}`;
       winEl.style.display = 'block';
+      if (factEl) {
+        if (data.topic.factsheet) {
+          factEl.textContent = data.topic.factsheet;
+          factEl.style.display = 'block';
+        } else {
+          factEl.style.display = 'none';
+        }
+      }
     } else {
       winEl.style.display = 'none';
+      if (factEl) factEl.style.display = 'none';
     }
   }
 });
@@ -354,12 +364,22 @@ function updateCurrentDebate(data) {
   }
 
   const winEl = document.getElementById('winningTopic');
+  const factEl = document.getElementById('winningFactsheet');
   if (winEl) {
     if (data && data.winner_topic) {
       winEl.textContent = `Winning topic: ${data.winner_topic.text}`;
       winEl.style.display = 'block';
+      if (factEl) {
+        if (data.winner_topic.factsheet) {
+          factEl.textContent = data.winner_topic.factsheet;
+          factEl.style.display = 'block';
+        } else {
+          factEl.style.display = 'none';
+        }
+      }
     } else {
       winEl.style.display = 'none';
+      if (factEl) factEl.style.display = 'none';
     }
   }
 

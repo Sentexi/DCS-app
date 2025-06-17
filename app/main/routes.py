@@ -159,7 +159,11 @@ def dashboard_debates_json():
             'vote_percent': vote_percent,
             'votes_cast': votes_cast,
             'votes_total': votes_total,
-            'winner_topic': {'id': winner.id, 'text': winner.text} if winner else None,
+            'winner_topic': {
+                'id': winner.id,
+                'text': winner.text,
+                'factsheet': winner.factsheet,
+            } if winner else None,
         }
 
     return jsonify({
