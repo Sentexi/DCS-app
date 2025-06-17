@@ -30,6 +30,13 @@ class JudgeSkillEnum(db.Enum):
     wing = 'Wing'
     chair = 'Chair'
 
+# Assignment mode for distributing speakers
+class AssignmentModeEnum(db.Enum):
+    true_random = 'True random'
+    random = 'Random'
+    skill_based = 'Skill based'
+    pro_am = 'ProAm'
+
 
 class PendingUser(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -109,6 +116,16 @@ class Debate(db.Model):
     style = db.Column(
         db.Enum('OPD', 'BP', 'Dynamic', name='debate_style'),
         nullable=False
+    )
+    assignment_mode = db.Column(
+        db.Enum(
+            'True random',
+            'Random',
+            'Skill based',
+            'ProAm',
+            name='assignment_mode'
+        ),
+        default='Random'
     )
     voting_open = db.Column(db.Boolean, default=True)
     active = db.Column(db.Boolean, default=False)

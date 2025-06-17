@@ -11,6 +11,13 @@
         <option value="BP" {% if debate.style == "BP" %}selected{% endif %}>BP</option>
         <option value="Dynamic" {% if debate.style == "Dynamic" %}selected{% endif %}>Dynamic</option>
     </select><br>
+    Assignment Mode:
+    <select name="assignment_mode">
+        <option value="True random" {% if debate.assignment_mode == 'True random' %}selected{% endif %}>True random</option>
+        <option value="Random" {% if debate.assignment_mode == 'Random' %}selected{% endif %}>Random</option>
+        <option value="Skill based" {% if debate.assignment_mode == 'Skill based' %}selected{% endif %}>Skill based</option>
+        <option value="ProAm" {% if debate.assignment_mode == 'ProAm' %}selected{% endif %}>ProAm</option>
+    </select><br>
     <input type="submit" value="Save">
 </form>
 <a href="{{ url_for('admin.admin_dashboard') }}">Back</a>
