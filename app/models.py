@@ -129,6 +129,7 @@ class Debate(db.Model):
 class Topic(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     text = db.Column(db.String(240), nullable=False)
+    factsheet = db.Column(db.Text, nullable=True)
     debate_id = db.Column(db.Integer, db.ForeignKey('debate.id'), nullable=False)
 
     # Relationship: back to debate

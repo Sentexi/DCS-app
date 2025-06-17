@@ -13,7 +13,20 @@ function populateVoteBox() {
     const list = document.createElement('ul');
     topics.topics.forEach(t => {
       const li = document.createElement('li');
-      li.textContent = t.text + ' ';
+      const span = document.createElement('span');
+      span.textContent = t.text + ' ';
+      li.appendChild(span);
+      if (t.factsheet) {
+        const details = document.createElement('details');
+        details.classList.add('d-inline-block', 'ms-2');
+        const summary = document.createElement('summary');
+        summary.textContent = 'Factsheet';
+        details.appendChild(summary);
+        const div = document.createElement('div');
+        div.textContent = t.factsheet;
+        details.appendChild(div);
+        li.appendChild(details);
+      }
       if (status.user_votes.includes(t.id)) {
         const strong = document.createElement('strong');
         strong.textContent = '\u2014 You voted';

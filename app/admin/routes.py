@@ -70,10 +70,11 @@ def add_topic(debate_id):
     debate = Debate.query.get_or_404(debate_id)
     if request.method == 'POST':
         text = request.form['text']
+        factsheet = request.form.get('factsheet')
         if not text:
             flash('Please enter a topic.', 'danger')
             return redirect(url_for('admin.add_topic', debate_id=debate_id))
-        topic = Topic(text=text, debate_id=debate_id)
+        topic = Topic(text=text, factsheet=factsheet, debate_id=debate_id)
         db.session.add(topic)
         db.session.commit()
         socketio.emit('topic_list_update', {'debate_id': debate_id})
@@ -187,8 +188,10 @@ def edit_topic(topic_id):
     topic = Topic.query.get_or_404(topic_id)
     if request.method == 'POST':
         text = request.form['text']
+        factsheet = request.form.get('factsheet')
         if text:
             topic.text = text
+            topic.factsheet = factsheet
             db.session.commit()
             flash('Topic updated.', 'success')
             return redirect(url_for('admin.admin_dashboard'))
