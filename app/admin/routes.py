@@ -112,7 +112,11 @@ def toggle_voting(debate_id):
         if winner:
             socketio.emit('winning_topic', {
                 'debate_id': debate_id,
-                'topic': {'id': winner.id, 'text': winner.text}
+                'topic': {
+                    'id': winner.id,
+                    'text': winner.text,
+                    'factsheet': winner.factsheet,
+                }
             })
     socketio.emit('debate_status', {
         'debate_id': debate_id,
