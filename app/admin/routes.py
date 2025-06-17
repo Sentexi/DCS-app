@@ -52,10 +52,12 @@ def create_debate():
     if request.method == 'POST':
         title = request.form['title']
         style = request.form['style']
+        assignment_mode = request.form.get('assignment_mode', 'Random')
         if not title or style not in ['OPD', 'BP', 'Dynamic']:
             flash('Please fill all fields correctly.', 'danger')
             return redirect(url_for('admin.create_debate'))
-        debate = Debate(title=title, style=style, active=False)
+        debate = Debate(title=title, style=style,
+                        assignment_mode=assignment_mode, active=False)
         db.session.add(debate)
         db.session.commit()
         flash('Debate created!', 'success')
@@ -159,9 +161,11 @@ def edit_debate(debate_id):
     if request.method == 'POST':
         title = request.form['title']
         style = request.form['style']
+        assignment_mode = request.form.get('assignment_mode', debate.assignment_mode)
         if title and style in ['OPD', 'BP', 'Dynamic']:
             debate.title = title
             debate.style = style
+            debate.assignment_mode = assignment_mode
             db.session.commit()
             flash('Debate updated.', 'success')
             return redirect(url_for('admin.admin_dashboard'))
@@ -284,6 +288,10 @@ def run_assign(debate_id):
     db.session.commit()
 
     scenario = request.form.get('scenario')
+    mode = request.form.get('assignment_mode')
+    if mode:
+        debate.assignment_mode = mode
+        db.session.commit()
     ok, msg = assign_speakers(debate, users, scenario=scenario)
     flash(msg, "success" if ok else "danger")
     if ok:
