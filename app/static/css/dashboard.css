@@ -18,3 +18,7 @@
 #graphicContainer {
   width: 100%;
 }
+
+.factsheet-content {
+  white-space: pre-wrap;
+}

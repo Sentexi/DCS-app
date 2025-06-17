@@ -23,6 +23,7 @@ function populateVoteBox() {
         summary.textContent = 'Factsheet';
         details.appendChild(summary);
         const div = document.createElement('div');
+        div.classList.add('factsheet-content');
         div.textContent = t.factsheet;
         details.appendChild(div);
         li.appendChild(details);
