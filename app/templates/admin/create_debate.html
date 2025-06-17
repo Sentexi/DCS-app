@@ -18,6 +18,15 @@
                 <option value="Dynamic">Dynamic</option>
             </select>
         </div>
+        <div class="mb-3">
+            <label for="assignment_mode" class="form-label">Assignment Mode:</label>
+            <select id="assignment_mode" name="assignment_mode" class="form-select">
+                <option value="True random">True random</option>
+                <option value="Random" selected>Random</option>
+                <option value="Skill based">Skill based</option>
+                <option value="ProAm">ProAm</option>
+            </select>
+        </div>
         <button type="submit" class="btn btn-success">Create</button>
         <a href="{{ url_for('admin.admin_dashboard') }}" class="btn btn-link">Back</a>
     </form>
