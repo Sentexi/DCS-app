@@ -128,9 +128,10 @@ def open_second_voting(debate_id):
         return redirect(url_for('admin.admin_dashboard'))
     debate.voting_open = True
     debate.second_voting_open = True
-    Vote.query.join(Topic).filter(
-        Topic.debate_id == debate_id,
-        Vote.round == 2
+    topic_ids = db.session.query(Topic.id).filter(Topic.debate_id == debate_id)
+    Vote.query.filter(
+        Vote.round == 2,
+        Vote.topic_id.in_(topic_ids)
     ).delete(synchronize_session=False)
     db.session.commit()
     socketio.emit('debate_status', {
