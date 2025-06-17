@@ -128,6 +128,8 @@ class Debate(db.Model):
         default='Random'
     )
     voting_open = db.Column(db.Boolean, default=True)
+    second_voting_open = db.Column(db.Boolean, default=False)
+    second_voting_topics = db.Column(db.String, nullable=True)
     active = db.Column(db.Boolean, default=False)
 
     # Relationship: which topics belong to this debate?
@@ -138,6 +140,15 @@ class Debate(db.Model):
     )
     
     assignment_complete = db.Column(db.Boolean, default=False)
+
+    def second_topic_ids(self):
+        if not self.second_voting_topics:
+            return []
+        return [int(tid) for tid in self.second_voting_topics.split(',') if tid]
+
+    def second_topics(self):
+        ids = set(self.second_topic_ids())
+        return [t for t in self.topics if t.id in ids]
 
     def __repr__(self):
         return f'<Debate {self.title} ({self.style})>'
@@ -163,13 +174,16 @@ class Vote(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     topic_id = db.Column(db.Integer, db.ForeignKey('topic.id'), nullable=False)
+    round = db.Column(db.Integer, default=1)
 
     # Relationships
     user = db.relationship('User', back_populates='votes')
     topic = db.relationship('Topic', back_populates='votes')
 
     # Enforce: a user can only vote for a given topic once
-    __table_args__ = (db.UniqueConstraint('user_id', 'topic_id', name='_user_topic_uc'),)
+    __table_args__ = (
+        db.UniqueConstraint('user_id', 'topic_id', 'round', name='_user_topic_round_uc'),
+    )
 
     def __repr__(self):
         return f'<Vote user={self.user_id} topic={self.topic_id}>'

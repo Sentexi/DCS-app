@@ -40,6 +40,9 @@
             <a href="{{ url_for('admin.toggle_voting', debate_id=debate.id) }}" class="btn btn-outline-warning btn-sm flex-fill flex-md-grow-0">
               {% if debate.voting_open %}Close Voting{% else %}Open Voting{% endif %}
             </a>
+            {% if debate.second_voting_topics and not debate.second_voting_open %}
+            <a href="{{ url_for('admin.open_second_voting', debate_id=debate.id) }}" class="btn btn-outline-warning btn-sm flex-fill flex-md-grow-0">Open Second Voting</a>
+            {% endif %}
             <a href="{{ url_for('admin.toggle_active', debate_id=debate.id) }}" class="btn btn-outline-secondary btn-sm flex-fill flex-md-grow-0">
               {% if debate.active %}Set Inactive{% else %}Set Active{% endif %}
             </a>

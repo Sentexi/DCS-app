@@ -272,6 +272,9 @@ socket.on('debate_status', data => {
   } else {
     cont.style.display = 'none';
   }
+  if (typeof data.second_voting_open !== 'undefined') {
+    window.secondVotingOpen = data.second_voting_open;
+  }
 });
 
 socket.on('assignments_ready', data => {
@@ -344,6 +347,7 @@ function updateCurrentDebate(data) {
 
   window.currentDebateId = data ? data.id : null;
   window.votingOpen = data ? data.voting_open : false;
+  window.secondVotingOpen = data ? data.second_voting_open : false;
   window.assignmentsComplete = data ? data.assignment_complete : false;
   window.currentDebateStyle = data ? data.style : '';
   window.userHasSlot = data && data.user_role ? true : false;

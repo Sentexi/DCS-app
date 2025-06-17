@@ -91,10 +91,24 @@ def add_topic(debate_id):
 def toggle_voting(debate_id):
     debate = Debate.query.get_or_404(debate_id)
     debate.voting_open = not debate.voting_open
+    if not debate.voting_open:
+        if debate.second_voting_open:
+            debate.second_voting_open = False
+        else:
+            # Check for tie in first round
+            votes = {t.id: len(t.votes) for t in debate.topics}
+            if votes:
+                max_votes = max(votes.values())
+                tied = [str(tid) for tid, c in votes.items() if c == max_votes]
+                if len(tied) > 1:
+                    debate.second_voting_topics = ','.join(tied)
+                else:
+                    debate.second_voting_topics = None
     db.session.commit()
     socketio.emit('debate_status', {
         'debate_id': debate_id,
-        'voting_open': debate.voting_open
+        'voting_open': debate.voting_open,
+        'second_voting_open': debate.second_voting_open
     })
     socketio.emit('debate_list_update', {
         'debate_id': debate_id,
@@ -102,6 +116,33 @@ def toggle_voting(debate_id):
     })
     status = "opened" if debate.voting_open else "closed"
     flash(f'Voting {status} for {debate.title}.', 'info')
+    return redirect(url_for('admin.admin_dashboard'))
+
+@admin_bp.route('/admin/<int:debate_id>/open_second_voting')
+@login_required
+@admin_required
+def open_second_voting(debate_id):
+    debate = Debate.query.get_or_404(debate_id)
+    if not debate.second_voting_topics:
+        flash('No tie detected.', 'warning')
+        return redirect(url_for('admin.admin_dashboard'))
+    debate.voting_open = True
+    debate.second_voting_open = True
+    Vote.query.join(Topic).filter(
+        Topic.debate_id == debate_id,
+        Vote.round == 2
+    ).delete(synchronize_session=False)
+    db.session.commit()
+    socketio.emit('debate_status', {
+        'debate_id': debate_id,
+        'voting_open': True,
+        'second_voting_open': True
+    })
+    socketio.emit('debate_list_update', {
+        'debate_id': debate_id,
+        'voting_open': True
+    })
+    flash('Second voting opened.', 'info')
     return redirect(url_for('admin.admin_dashboard'))
 
 # Toggle active status
