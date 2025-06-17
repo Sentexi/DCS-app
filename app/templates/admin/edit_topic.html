@@ -4,8 +4,10 @@
 {% block content %}
 <h2>Edit Topic</h2>
 <form method="post">
-    Topic: <input name="text" value="{{ topic.text }}"><br>
-    <input type="submit" value="Save">
+    Topic: <input name="text" value="{{ topic.text }}" class="form-control mb-2"><br>
+    Factsheet:
+    <textarea name="factsheet" class="form-control mb-2" rows="4">{{ topic.factsheet }}</textarea>
+    <input type="submit" value="Save" class="btn btn-primary">
 </form>
 <a href="{{ url_for('admin.admin_dashboard') }}">Back</a>
 {% endblock %}

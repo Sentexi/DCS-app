@@ -244,7 +244,10 @@ def debate_assignments(debate_id):
 @login_required
 def debate_topics_json(debate_id):
     debate = Debate.query.get_or_404(debate_id)
-    topics = [{'id': t.id, 'text': t.text} for t in debate.topics]
+    topics = [
+        {'id': t.id, 'text': t.text, 'factsheet': t.factsheet}
+        for t in debate.topics
+    ]
     return jsonify({'topics': topics})
 
 @main_bp.route('/debate/<int:debate_id>/assignments_json')
