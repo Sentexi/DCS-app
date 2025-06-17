@@ -6,6 +6,7 @@ from app.models import Debate, SpeakerSlot, User
 from app.extensions import db
 from app import socketio
 from datetime import datetime, timedelta
+from app.utils import compute_winning_topic
 
 
 from . import main_bp
@@ -27,6 +28,7 @@ def dashboard():
     has_slot = False
     is_judge_chair = False
 
+    winning_topic = None
     if current_debate:
         if current_debate.second_voting_open:
             topic_ids = current_debate.second_topic_ids()
@@ -63,6 +65,8 @@ def dashboard():
             if slot.role == 'Judge-Chair':
                 is_judge_chair = True
 
+        winning_topic = compute_winning_topic(current_debate)
+    
     # Categorize debates for UI tabs or display
     active_debates = [d for d in debates if d.active and (not current_debate or d.id != current_debate.id)]
     past_debates = [d for d in debates if not d.active and d.assignment_complete]
@@ -83,6 +87,7 @@ def dashboard():
         has_slot=has_slot,
         is_judge_chair=is_judge_chair,
         second_voting_open=current_debate.second_voting_open if current_debate else False,
+        winning_topic=winning_topic,
     )
 
 
@@ -139,6 +144,7 @@ def dashboard_debates_json():
             f"{slot.role} in Room {slot.room}" if slot and slot.room else slot.role
         ) if slot else None
         is_judge_chair = slot.role == 'Judge-Chair' if slot else False
+        winner = compute_winning_topic(d)
 
         return {
             'id': d.id,
@@ -153,6 +159,7 @@ def dashboard_debates_json():
             'vote_percent': vote_percent,
             'votes_cast': votes_cast,
             'votes_total': votes_total,
+            'winner_topic': {'id': winner.id, 'text': winner.text} if winner else None,
         }
 
     return jsonify({

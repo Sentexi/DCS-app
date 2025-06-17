@@ -5,6 +5,7 @@ import itertools
 from app.models import Debate, Topic, Vote, User
 from app.extensions import db
 from app.logic.assign import assign_speakers, _compute_room_counts
+from app.utils import compute_winning_topic
 from datetime import datetime, timedelta
 from app import socketio
 
@@ -105,6 +106,14 @@ def toggle_voting(debate_id):
                 else:
                     debate.second_voting_topics = None
     db.session.commit()
+
+    if not debate.voting_open and not debate.second_voting_open:
+        winner = compute_winning_topic(debate)
+        if winner:
+            socketio.emit('winning_topic', {
+                'debate_id': debate_id,
+                'topic': {'id': winner.id, 'text': winner.text}
+            })
     socketio.emit('debate_status', {
         'debate_id': debate_id,
         'voting_open': debate.voting_open,
