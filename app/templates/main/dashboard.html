@@ -10,6 +10,7 @@
 <script>
   window.currentDebateId = {{ current_debate.id if current_debate else 'null' }};
   window.votingOpen = {{ 'true' if current_debate and current_debate.voting_open else 'false' }};
+  window.secondVotingOpen = {{ 'true' if current_debate and second_voting_open else 'false' }};
   window.assignmentsComplete = {{ 'true' if current_debate and current_debate.assignment_complete else 'false' }};
   window.currentDebateStyle = "{{ current_debate.style if current_debate else '' }}";
   window.currentUserId = {{ current_user.id }};
