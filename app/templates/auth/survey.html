@@ -32,18 +32,66 @@
     </div>
 
     <div class="mb-3">
-        <label class="form-label"><strong>Judging: Would you wing or chair a debate?</strong></label>
+        <label class="form-label"><strong>In which languages can you debate?</strong></label>
         <div class="form-check">
-            <input class="form-check-input" type="radio" name="judge_choice" id="nojudge" value="no">
-            <label class="form-check-label" for="nojudge">No</label>
+            <input class="form-check-input" type="checkbox" name="languages" id="lang_de" value="German">
+            <label class="form-check-label" for="lang_de">German</label>
         </div>
         <div class="form-check">
-            <input class="form-check-input" type="radio" name="judge_choice" id="wing" value="wing">
-            <label class="form-check-label" for="wing">Wing</label>
+            <input class="form-check-input" type="checkbox" name="languages" id="lang_en" value="English">
+            <label class="form-check-label" for="lang_en">English</label>
+        </div>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label"><strong>Did you attend a debating tournament?</strong></label>
+        <div class="form-check">
+            <input class="form-check-input" type="radio" name="tournament" id="tourn_no" value="no">
+            <label class="form-check-label" for="tourn_no">No</label>
         </div>
         <div class="form-check">
-            <input class="form-check-input" type="radio" name="judge_choice" id="chair" value="chair">
-            <label class="form-check-label" for="chair">Chair</label>
+            <input class="form-check-input" type="radio" name="tournament" id="tourn_yes" value="yes">
+            <label class="form-check-label" for="tourn_yes">Yes</label>
+        </div>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label"><strong>How confident would you be chair judging a debate?</strong></label>
+        <div class="form-check">
+            <input class="form-check-input" type="radio" name="chair_confidence" id="chair_vc" value="very">
+            <label class="form-check-label" for="chair_vc">Very confident</label>
+        </div>
+        <div class="form-check">
+            <input class="form-check-input" type="radio" name="chair_confidence" id="chair_rc" value="rather">
+            <label class="form-check-label" for="chair_rc">Rather confident</label>
+        </div>
+        <div class="form-check">
+            <input class="form-check-input" type="radio" name="chair_confidence" id="chair_rnc" value="rather_not">
+            <label class="form-check-label" for="chair_rnc">Rather not confident</label>
+        </div>
+        <div class="form-check">
+            <input class="form-check-input" type="radio" name="chair_confidence" id="chair_nc" value="not">
+            <label class="form-check-label" for="chair_nc">Not confident</label>
+        </div>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label"><strong>How confident would you be judging a debate as a wing?</strong></label>
+        <div class="form-check">
+            <input class="form-check-input" type="radio" name="wing_confidence" id="wing_vc" value="very">
+            <label class="form-check-label" for="wing_vc">Very confident</label>
+        </div>
+        <div class="form-check">
+            <input class="form-check-input" type="radio" name="wing_confidence" id="wing_rc" value="rather">
+            <label class="form-check-label" for="wing_rc">Rather confident</label>
+        </div>
+        <div class="form-check">
+            <input class="form-check-input" type="radio" name="wing_confidence" id="wing_rnc" value="rather_not">
+            <label class="form-check-label" for="wing_rnc">Rather not confident</label>
+        </div>
+        <div class="form-check">
+            <input class="form-check-input" type="radio" name="wing_confidence" id="wing_nc" value="not">
+            <label class="form-check-label" for="wing_nc">Not confident</label>
         </div>
     </div>
 

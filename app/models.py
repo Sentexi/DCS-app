@@ -57,6 +57,7 @@ class User(UserMixin, db.Model):
     is_admin = db.Column(db.Boolean, default=False)
     date_joined_choice = db.Column(db.String(16), nullable=True)   # stores survey radio answer
     judge_choice = db.Column(db.String(8), nullable=True)          # stores survey radio answer
+    languages = db.Column(db.String(64), nullable=True)            # comma separated list of languages
     debate_skill = db.Column(db.String(24), nullable=True)
     judge_skill = db.Column(db.String(16), nullable=True)
     debate_count = db.Column(db.Integer, default=0)

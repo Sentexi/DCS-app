@@ -136,13 +136,23 @@ def survey():
 
     if request.method == 'POST':
         date_joined_choice = request.form.get('date_joined_choice')
-        judge_choice = request.form.get('judge_choice')
-        if not date_joined_choice or not judge_choice:
+        languages = request.form.getlist('languages')
+        chair_conf = request.form.get('chair_confidence')
+        wing_conf = request.form.get('wing_confidence')
+        if not date_joined_choice or not chair_conf or not wing_conf:
             flash('Please answer all questions!', 'danger')
             return render_template('auth/survey.html')
 
+        if chair_conf in ('very', 'rather'):
+            judge_choice = 'chair'
+        elif wing_conf in ('very', 'rather'):
+            judge_choice = 'wing'
+        else:
+            judge_choice = 'no'
+
         current_user.date_joined_choice = date_joined_choice
         current_user.judge_choice = judge_choice
+        current_user.languages = ','.join(languages)
         apply_skills(current_user)
         db.session.commit()
         flash('Thanks for your answers! Your skills have been set.', 'success')
