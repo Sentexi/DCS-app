@@ -22,7 +22,8 @@ def compute_bp_elo(slots: List[SpeakerSlot], ranks: Dict[str, int]) -> List[Tupl
         rating_team = []
         for slot in teams[team]:
             mu = float(slot.user.elo_rating or DEFAULT_MU)
-            rating_team.append(PlackettLuceRating(mu=mu, sigma=DEFAULT_SIGMA))
+            sigma = float(getattr(slot.user, 'elo_sigma', DEFAULT_SIGMA) or DEFAULT_SIGMA)
+            rating_team.append(PlackettLuceRating(mu=mu, sigma=sigma))
         team_ratings.append(rating_team)
 
     ranks_list = [ranks.get(team, 4) for team in ordered_teams]
@@ -31,8 +32,12 @@ def compute_bp_elo(slots: List[SpeakerSlot], ranks: Dict[str, int]) -> List[Tupl
     updates: List[Tuple[SpeakerSlot, float, float]] = []
     for team_idx, team in enumerate(ordered_teams):
         for player_idx, slot in enumerate(teams[team]):
-            old = float(slot.user.elo_rating or DEFAULT_MU)
-            new = float(new_ratings[team_idx][player_idx].mu)
-            slot.user.elo_rating = new
-            updates.append((slot, old, new))
+            old_mu = float(slot.user.elo_rating or DEFAULT_MU)
+            old_sigma = float(getattr(slot.user, 'elo_sigma', DEFAULT_SIGMA) or DEFAULT_SIGMA)
+            new_mu = float(new_ratings[team_idx][player_idx].mu)
+            new_sigma = float(new_ratings[team_idx][player_idx].sigma)
+            slot.user.elo_rating = new_mu
+            if hasattr(slot.user, 'elo_sigma'):
+                slot.user.elo_sigma = new_sigma
+            updates.append((slot, old_mu, new_mu))
     return updates
