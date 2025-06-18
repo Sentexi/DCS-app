@@ -41,6 +41,7 @@
                 {% if user.is_admin %}Revoke Admin{% else %}Make Admin{% endif %}
             </button>
         </form>
+        <a href="{{ url_for('admin.edit_user', user_id=user.id) }}" class="btn btn-sm btn-primary ms-1">Edit</a>
       </td>
     </tr>
     {% endfor %}

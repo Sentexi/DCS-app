@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Edit User{% endblock %}
+{% block content %}
+<h2>Edit User</h2>
+<form method="post" class="mb-3">
+    <div class="mb-3">
+        <label class="form-label">Debate Skill</label>
+        <select name="debate_skill" class="form-select">
+            {% for skill in ['First Timer','Beginner','Intermediate','Advanced','Expert'] %}
+            <option value="{{ skill }}" {% if user.debate_skill==skill %}selected{% endif %}>{{ skill }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Judge Skill</label>
+        <select name="judge_skill" class="form-select">
+            {% for skill in ['Cant judge','Wing','Chair'] %}
+            <option value="{{ skill }}" {% if user.judge_skill==skill %}selected{% endif %}>{{ skill }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="mb-3">
+        <label class="form-label">BP Elo</label>
+        <input type="number" step="any" name="elo_rating" class="form-control" value="{{ '%.2f'|format(user.elo_rating) if user.elo_rating is not none else '' }}">
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Sigma</label>
+        <input type="number" step="any" name="elo_sigma" class="form-control" value="{{ '%.2f'|format(user.elo_sigma) if user.elo_sigma is not none else '' }}">
+    </div>
+    <button type="submit" class="btn btn-primary">Save</button>
+    <a href="{{ url_for('admin.manage_users') }}" class="btn btn-link">Back</a>
+</form>
+{% endblock %}
