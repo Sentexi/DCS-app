@@ -6,6 +6,7 @@ from app.models import Debate, SpeakerSlot, User
 from app.extensions import db
 from app import socketio
 from datetime import datetime, timedelta
+from app.utils import compute_winning_topic
 
 
 from . import main_bp
@@ -27,11 +28,18 @@ def dashboard():
     has_slot = False
     is_judge_chair = False
 
+    winning_topic = None
     if current_debate:
-        # Get topic IDs for this debate
-        topic_ids = [t.id for t in current_debate.topics]
-        # Get all votes for these topics
-        votes = Vote.query.filter(Vote.topic_id.in_(topic_ids)).all()
+        if current_debate.second_voting_open:
+            topic_ids = current_debate.second_topic_ids()
+            round_num = 2
+        else:
+            topic_ids = [t.id for t in current_debate.topics]
+            round_num = 1
+        votes = Vote.query.filter(
+            Vote.topic_id.in_(topic_ids),
+            Vote.round == round_num
+        ).all()
         voter_ids = set(v.user_id for v in votes)
         votes_cast = len(voter_ids)
 
@@ -57,6 +65,8 @@ def dashboard():
             if slot.role == 'Judge-Chair':
                 is_judge_chair = True
 
+        winning_topic = compute_winning_topic(current_debate)
+    
     # Categorize debates for UI tabs or display
     active_debates = [d for d in debates if d.active and (not current_debate or d.id != current_debate.id)]
     past_debates = [d for d in debates if not d.active and d.assignment_complete]
@@ -76,6 +86,8 @@ def dashboard():
         single_open=current_debate,
         has_slot=has_slot,
         is_judge_chair=is_judge_chair,
+        second_voting_open=current_debate.second_voting_open if current_debate else False,
+        winning_topic=winning_topic,
     )
 
 
@@ -96,13 +108,22 @@ def dashboard_debates_json():
             'title': d.title,
             'style': d.style,
             'active': d.active,
+            'second_voting_open': d.second_voting_open,
         } if d else None
 
     def serialize_current(d):
         if not d:
             return None
-        topic_ids = [t.id for t in d.topics]
-        votes = Vote.query.filter(Vote.topic_id.in_(topic_ids)).all()
+        if d.second_voting_open:
+            topic_ids = d.second_topic_ids()
+            round_num = 2
+        else:
+            topic_ids = [t.id for t in d.topics]
+            round_num = 1
+        votes = Vote.query.filter(
+            Vote.topic_id.in_(topic_ids),
+            Vote.round == round_num
+        ).all()
         voter_ids = set(v.user_id for v in votes)
         votes_cast = len(voter_ids)
 
@@ -123,6 +144,7 @@ def dashboard_debates_json():
             f"{slot.role} in Room {slot.room}" if slot and slot.room else slot.role
         ) if slot else None
         is_judge_chair = slot.role == 'Judge-Chair' if slot else False
+        winner = compute_winning_topic(d)
 
         return {
             'id': d.id,
@@ -130,12 +152,18 @@ def dashboard_debates_json():
             'style': d.style,
             'active': d.active,
             'voting_open': d.voting_open,
+            'second_voting_open': d.second_voting_open,
             'assignment_complete': d.assignment_complete,
             'user_role': user_role,
             'is_judge_chair': is_judge_chair,
             'vote_percent': vote_percent,
             'votes_cast': votes_cast,
             'votes_total': votes_total,
+            'winner_topic': {
+                'id': winner.id,
+                'text': winner.text,
+                'factsheet': winner.factsheet,
+            } if winner else None,
         }
 
     return jsonify({
@@ -153,30 +181,34 @@ def debate_view(debate_id):
         return redirect(url_for('auth.survey'))
 
     debate = Debate.query.options(joinedload(Debate.speakerslots)).get_or_404(debate_id)
-    topics = debate.topics  # adjust as needed
+    topics = debate.second_topics() if debate.second_voting_open else debate.topics
 
     # voting logic
     if request.method == 'POST' and debate.voting_open:
         topic_id = int(request.form.get('topic_id'))
-        # Check if user already voted for this topic
-        existing_vote = Vote.query.filter_by(user_id=current_user.id, topic_id=topic_id).first()
-        # Count how many topics user already voted for in this debate
+        round_num = 2 if debate.second_voting_open else 1
+        existing_vote = Vote.query.filter_by(user_id=current_user.id, topic_id=topic_id, round=round_num).first()
         user_votes_in_debate = Vote.query.join(Topic).filter(
             Vote.user_id == current_user.id,
-            Topic.debate_id == debate_id
+            Topic.debate_id == debate_id,
+            Vote.round == round_num
         ).count()
+        max_votes = 1 if debate.second_voting_open else 2
         if existing_vote:
             flash('You have already voted for this topic.', 'warning')
-        elif user_votes_in_debate >= 2:
-            flash('You can only vote for up to 2 topics per debate.', 'danger')
+        elif user_votes_in_debate >= max_votes:
+            if debate.second_voting_open:
+                flash('You can only vote for one topic in this round.', 'danger')
+            else:
+                flash('You can only vote for up to 2 topics per debate.', 'danger')
         else:
             # Bump debate_count if this is their first vote in this debate
             
-            if user_votes_in_debate == 0:
+            if user_votes_in_debate == 0 and round_num == 1:
                 if current_user.debate_count is None:
                     current_user.debate_count = 0
                 current_user.debate_count += 1
-            vote = Vote(user_id=current_user.id, topic_id=topic_id)
+            vote = Vote(user_id=current_user.id, topic_id=topic_id, round=round_num)
             db.session.add(vote)
             db.session.commit()
             
@@ -191,7 +223,7 @@ def debate_view(debate_id):
                 row[0]
                 for row in db.session.query(Vote.user_id)
                 .join(Topic)
-                .filter(Topic.debate_id == debate_id)
+                .filter(Topic.debate_id == debate_id, Vote.round == round_num)
                 .distinct()
                 .all()
             )
@@ -212,11 +244,15 @@ def debate_view(debate_id):
         return redirect(url_for('main.debate_view', debate_id=debate_id))
 
     # Prepare user vote info for template
-    user_votes = [vote.topic_id for vote in Vote.query.filter_by(user_id=current_user.id).all()]
-    votes_left = 2 - Vote.query.join(Topic).filter(
+    round_num = 2 if debate.second_voting_open else 1
+    topic_ids = debate.second_topic_ids() if debate.second_voting_open else [t.id for t in debate.topics]
+    user_votes = [v.topic_id for v in Vote.query.filter(
         Vote.user_id == current_user.id,
-        Topic.debate_id == debate_id
-    ).count()
+        Vote.round == round_num,
+        Vote.topic_id.in_(topic_ids)
+    ).all()]
+    limit = 1 if debate.second_voting_open else 2
+    votes_left = limit - len(user_votes)
 
     return render_template('main/debate.html',
                            debate=debate,
@@ -244,7 +280,11 @@ def debate_assignments(debate_id):
 @login_required
 def debate_topics_json(debate_id):
     debate = Debate.query.get_or_404(debate_id)
-    topics = [{'id': t.id, 'text': t.text} for t in debate.topics]
+    topic_list = debate.second_topics() if debate.second_voting_open else debate.topics
+    topics = [
+        {'id': t.id, 'text': t.text, 'factsheet': t.factsheet}
+        for t in topic_list
+    ]
     return jsonify({'topics': topics})
 
 @main_bp.route('/debate/<int:debate_id>/assignments_json')
@@ -281,12 +321,20 @@ def debate_assignments_json(debate_id):
 @login_required
 def debate_vote_status_json(debate_id):
     debate = Debate.query.get_or_404(debate_id)
-    topic_ids = [t.id for t in debate.topics]
+    if debate.second_voting_open:
+        round_num = 2
+        topic_ids = debate.second_topic_ids()
+        limit = 1
+    else:
+        round_num = 1
+        topic_ids = [t.id for t in debate.topics]
+        limit = 2
     user_votes = [v.topic_id for v in Vote.query.filter(
         Vote.user_id == current_user.id,
+        Vote.round == round_num,
         Vote.topic_id.in_(topic_ids)
     ).all()]
-    votes_left = 2 - len(user_votes)
+    votes_left = limit - len(user_votes)
     return jsonify({'user_votes': user_votes, 'votes_left': votes_left})
 
 @main_bp.route('/debate/<int:debate_id>/graphic')

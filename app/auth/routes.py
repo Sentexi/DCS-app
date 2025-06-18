@@ -1,10 +1,11 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, request
+from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import login_user, logout_user, login_required, current_user
 from datetime import datetime
 from app.extensions import db, login_manager
-from app.models import User
+from app.models import User, PendingUser
 from app.models import apply_skills
+from app.utils import send_email, generate_token, confirm_token
 
 from . import auth_bp 
 
@@ -35,10 +36,13 @@ def register():
             flash('Passwords do not match.')
             return redirect(url_for('auth.register'))
         hashed_pw = generate_password_hash(password)
-        user = User(first_name=first_name, last_name=last_name, email=email, password=hashed_pw)
-        db.session.add(user)
+        pending = PendingUser(first_name=first_name, last_name=last_name, email=email, password=hashed_pw)
+        db.session.add(pending)
         db.session.commit()
-        flash('Registration successful! Please log in.')
+        token = generate_token(email, 'email-confirm')
+        confirm_url = url_for('auth.confirm_email', token=token, _external=True)
+        send_email(email, 'Confirm your registration', f'Click the link to confirm your account: {confirm_url}')
+        flash('Registration successful! Please check your email to confirm your account.')
         return redirect(url_for('auth.login'))
     return render_template('auth/register.html')
 
@@ -58,6 +62,62 @@ def login():
         else:
             flash('Invalid email or password.')
     return render_template('auth/login.html')
+
+
+# Forgot password
+@auth_bp.route('/forgot_password', methods=['GET', 'POST'])
+def forgot_password():
+    if request.method == 'POST':
+        email = request.form['email']
+        user = User.query.filter_by(email=email).first()
+        if user:
+            token = generate_token(email, 'password-reset')
+            reset_url = url_for('auth.reset_password', token=token, _external=True)
+            send_email(email, 'Password Reset', f'Reset your password here: {reset_url}')
+        flash('If that email exists in our system, a reset link has been sent.', 'info')
+        return redirect(url_for('auth.login'))
+    return render_template('auth/forgot_password.html')
+
+
+@auth_bp.route('/reset_password/<token>', methods=['GET', 'POST'])
+def reset_password(token):
+    email = confirm_token(token, 'password-reset')
+    if not email:
+        flash('The reset link is invalid or has expired.', 'danger')
+        return redirect(url_for('auth.login'))
+    user = User.query.filter_by(email=email).first()
+    if not user:
+        flash('User not found.', 'danger')
+        return redirect(url_for('auth.login'))
+    if request.method == 'POST':
+        password = request.form['password']
+        password2 = request.form['password2']
+        if password != password2:
+            flash('Passwords do not match.', 'danger')
+            return render_template('auth/reset_password.html')
+        user.password = generate_password_hash(password)
+        db.session.commit()
+        flash('Password updated. You can now log in.', 'success')
+        return redirect(url_for('auth.login'))
+    return render_template('auth/reset_password.html')
+
+# Email confirmation
+@auth_bp.route('/confirm/<token>')
+def confirm_email(token):
+    email = confirm_token(token, 'email-confirm')
+    if not email:
+        flash('The confirmation link is invalid or has expired.', 'danger')
+        return redirect(url_for('auth.login'))
+    pending = PendingUser.query.filter_by(email=email).first()
+    if not pending:
+        flash('Account already confirmed or does not exist.', 'warning')
+        return redirect(url_for('auth.login'))
+    user = User(first_name=pending.first_name, last_name=pending.last_name, email=pending.email, password=pending.password)
+    db.session.add(user)
+    db.session.delete(pending)
+    db.session.commit()
+    flash('Account confirmed. You can now log in.', 'success')
+    return redirect(url_for('auth.login'))
 
 # Logout route
 @auth_bp.route('/logout')

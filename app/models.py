@@ -30,6 +30,22 @@ class JudgeSkillEnum(db.Enum):
     wing = 'Wing'
     chair = 'Chair'
 
+# Assignment mode for distributing speakers
+class AssignmentModeEnum(db.Enum):
+    true_random = 'True random'
+    random = 'Random'
+    skill_based = 'Skill based'
+    pro_am = 'ProAm'
+
+
+class PendingUser(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    first_name = db.Column(db.String(80), nullable=False)
+    last_name = db.Column(db.String(80))
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    password = db.Column(db.String(256), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
 
 # User model: represents app users (debaters, admins, etc.)
 class User(UserMixin, db.Model):
@@ -101,7 +117,19 @@ class Debate(db.Model):
         db.Enum('OPD', 'BP', 'Dynamic', name='debate_style'),
         nullable=False
     )
+    assignment_mode = db.Column(
+        db.Enum(
+            'True random',
+            'Random',
+            'Skill based',
+            'ProAm',
+            name='assignment_mode'
+        ),
+        default='Random'
+    )
     voting_open = db.Column(db.Boolean, default=True)
+    second_voting_open = db.Column(db.Boolean, default=False)
+    second_voting_topics = db.Column(db.String, nullable=True)
     active = db.Column(db.Boolean, default=False)
 
     # Relationship: which topics belong to this debate?
@@ -113,6 +141,15 @@ class Debate(db.Model):
     
     assignment_complete = db.Column(db.Boolean, default=False)
 
+    def second_topic_ids(self):
+        if not self.second_voting_topics:
+            return []
+        return [int(tid) for tid in self.second_voting_topics.split(',') if tid]
+
+    def second_topics(self):
+        ids = set(self.second_topic_ids())
+        return [t for t in self.topics if t.id in ids]
+
     def __repr__(self):
         return f'<Debate {self.title} ({self.style})>'
 
@@ -120,6 +157,7 @@ class Debate(db.Model):
 class Topic(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     text = db.Column(db.String(240), nullable=False)
+    factsheet = db.Column(db.Text, nullable=True)
     debate_id = db.Column(db.Integer, db.ForeignKey('debate.id'), nullable=False)
 
     # Relationship: back to debate
@@ -136,13 +174,16 @@ class Vote(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     topic_id = db.Column(db.Integer, db.ForeignKey('topic.id'), nullable=False)
+    round = db.Column(db.Integer, default=1)
 
     # Relationships
     user = db.relationship('User', back_populates='votes')
     topic = db.relationship('Topic', back_populates='votes')
 
     # Enforce: a user can only vote for a given topic once
-    __table_args__ = (db.UniqueConstraint('user_id', 'topic_id', name='_user_topic_uc'),)
+    __table_args__ = (
+        db.UniqueConstraint('user_id', 'topic_id', 'round', name='_user_topic_round_uc'),
+    )
 
     def __repr__(self):
         return f'<Vote user={self.user_id} topic={self.topic_id}>'

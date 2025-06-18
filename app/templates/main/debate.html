@@ -10,6 +10,12 @@
       {% for topic in debate.topics %}
         <li>
           {{ topic.text }}
+          {% if topic.factsheet %}
+            <details class="d-inline-block ms-2">
+              <summary>Factsheet</summary>
+              <div class="factsheet-content">{{ topic.factsheet }}</div>
+            </details>
+          {% endif %}
           {% if topic.id in user_votes %}
             <strong>— You voted</strong>
           {% elif votes_left > 0 %}

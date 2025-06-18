@@ -5,6 +5,7 @@ import itertools
 from app.models import Debate, Topic, Vote, User
 from app.extensions import db
 from app.logic.assign import assign_speakers, _compute_room_counts
+from app.utils import compute_winning_topic
 from datetime import datetime, timedelta
 from app import socketio
 
@@ -52,10 +53,12 @@ def create_debate():
     if request.method == 'POST':
         title = request.form['title']
         style = request.form['style']
+        assignment_mode = request.form.get('assignment_mode', 'Random')
         if not title or style not in ['OPD', 'BP', 'Dynamic']:
             flash('Please fill all fields correctly.', 'danger')
             return redirect(url_for('admin.create_debate'))
-        debate = Debate(title=title, style=style, active=False)
+        debate = Debate(title=title, style=style,
+                        assignment_mode=assignment_mode, active=False)
         db.session.add(debate)
         db.session.commit()
         flash('Debate created!', 'success')
@@ -70,10 +73,11 @@ def add_topic(debate_id):
     debate = Debate.query.get_or_404(debate_id)
     if request.method == 'POST':
         text = request.form['text']
+        factsheet = request.form.get('factsheet')
         if not text:
             flash('Please enter a topic.', 'danger')
             return redirect(url_for('admin.add_topic', debate_id=debate_id))
-        topic = Topic(text=text, debate_id=debate_id)
+        topic = Topic(text=text, factsheet=factsheet, debate_id=debate_id)
         db.session.add(topic)
         db.session.commit()
         socketio.emit('topic_list_update', {'debate_id': debate_id})
@@ -88,10 +92,36 @@ def add_topic(debate_id):
 def toggle_voting(debate_id):
     debate = Debate.query.get_or_404(debate_id)
     debate.voting_open = not debate.voting_open
+    if not debate.voting_open:
+        if debate.second_voting_open:
+            debate.second_voting_open = False
+        else:
+            # Check for tie in first round
+            votes = {t.id: len(t.votes) for t in debate.topics}
+            if votes:
+                max_votes = max(votes.values())
+                tied = [str(tid) for tid, c in votes.items() if c == max_votes]
+                if len(tied) > 1:
+                    debate.second_voting_topics = ','.join(tied)
+                else:
+                    debate.second_voting_topics = None
     db.session.commit()
+
+    if not debate.voting_open and not debate.second_voting_open:
+        winner = compute_winning_topic(debate)
+        if winner:
+            socketio.emit('winning_topic', {
+                'debate_id': debate_id,
+                'topic': {
+                    'id': winner.id,
+                    'text': winner.text,
+                    'factsheet': winner.factsheet,
+                }
+            })
     socketio.emit('debate_status', {
         'debate_id': debate_id,
-        'voting_open': debate.voting_open
+        'voting_open': debate.voting_open,
+        'second_voting_open': debate.second_voting_open
     })
     socketio.emit('debate_list_update', {
         'debate_id': debate_id,
@@ -99,6 +129,34 @@ def toggle_voting(debate_id):
     })
     status = "opened" if debate.voting_open else "closed"
     flash(f'Voting {status} for {debate.title}.', 'info')
+    return redirect(url_for('admin.admin_dashboard'))
+
+@admin_bp.route('/admin/<int:debate_id>/open_second_voting')
+@login_required
+@admin_required
+def open_second_voting(debate_id):
+    debate = Debate.query.get_or_404(debate_id)
+    if not debate.second_voting_topics:
+        flash('No tie detected.', 'warning')
+        return redirect(url_for('admin.admin_dashboard'))
+    debate.voting_open = True
+    debate.second_voting_open = True
+    topic_ids = db.session.query(Topic.id).filter(Topic.debate_id == debate_id)
+    Vote.query.filter(
+        Vote.round == 2,
+        Vote.topic_id.in_(topic_ids)
+    ).delete(synchronize_session=False)
+    db.session.commit()
+    socketio.emit('debate_status', {
+        'debate_id': debate_id,
+        'voting_open': True,
+        'second_voting_open': True
+    })
+    socketio.emit('debate_list_update', {
+        'debate_id': debate_id,
+        'voting_open': True
+    })
+    flash('Second voting opened.', 'info')
     return redirect(url_for('admin.admin_dashboard'))
 
 # Toggle active status
@@ -159,9 +217,11 @@ def edit_debate(debate_id):
     if request.method == 'POST':
         title = request.form['title']
         style = request.form['style']
+        assignment_mode = request.form.get('assignment_mode', debate.assignment_mode)
         if title and style in ['OPD', 'BP', 'Dynamic']:
             debate.title = title
             debate.style = style
+            debate.assignment_mode = assignment_mode
             db.session.commit()
             flash('Debate updated.', 'success')
             return redirect(url_for('admin.admin_dashboard'))
@@ -187,9 +247,12 @@ def edit_topic(topic_id):
     topic = Topic.query.get_or_404(topic_id)
     if request.method == 'POST':
         text = request.form['text']
+        factsheet = request.form.get('factsheet')
         if text:
             topic.text = text
+            topic.factsheet = factsheet
             db.session.commit()
+            socketio.emit('topic_list_update', {'debate_id': topic.debate_id})
             flash('Topic updated.', 'success')
             return redirect(url_for('admin.admin_dashboard'))
         flash('Invalid input.', 'danger')
@@ -203,6 +266,7 @@ def delete_topic(topic_id):
     topic = Topic.query.get_or_404(topic_id)
     db.session.delete(topic)
     db.session.commit()
+    socketio.emit('topic_list_update', {'debate_id': topic.debate_id})
     flash('Topic deleted.', 'info')
     return redirect(url_for('admin.admin_dashboard'))
 
@@ -213,6 +277,41 @@ def manage_users():
     from app.models import User
     users = User.query.all()
     return render_template('admin/users.html', users=users)
+
+
+@admin_bp.route('/admin/pending_users')
+@login_required
+@admin_required
+def manage_pending_users():
+    from app.models import PendingUser
+    pending = PendingUser.query.all()
+    return render_template('admin/pending_users.html', pending_users=pending)
+
+
+@admin_bp.route('/admin/pending_users/<int:pending_id>/confirm', methods=['POST'])
+@login_required
+@admin_required
+def confirm_pending_user(pending_id):
+    from app.models import PendingUser, User
+    p = PendingUser.query.get_or_404(pending_id)
+    user = User(first_name=p.first_name, last_name=p.last_name, email=p.email, password=p.password)
+    db.session.add(user)
+    db.session.delete(p)
+    db.session.commit()
+    flash('User confirmed.', 'success')
+    return redirect(url_for('admin.manage_pending_users'))
+
+
+@admin_bp.route('/admin/pending_users/<int:pending_id>/delete', methods=['POST'])
+@login_required
+@admin_required
+def delete_pending_user(pending_id):
+    from app.models import PendingUser
+    p = PendingUser.query.get_or_404(pending_id)
+    db.session.delete(p)
+    db.session.commit()
+    flash('Pending user deleted.', 'info')
+    return redirect(url_for('admin.manage_pending_users'))
 
 @admin_bp.route('/admin/users/<int:user_id>/toggle_admin', methods=['POST'])
 @login_required
@@ -249,6 +348,10 @@ def run_assign(debate_id):
     db.session.commit()
 
     scenario = request.form.get('scenario')
+    mode = request.form.get('assignment_mode')
+    if mode:
+        debate.assignment_mode = mode
+        db.session.commit()
     ok, msg = assign_speakers(debate, users, scenario=scenario)
     flash(msg, "success" if ok else "danger")
     if ok:

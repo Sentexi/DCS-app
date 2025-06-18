@@ -7,6 +7,7 @@
   <div class="d-flex flex-column flex-md-row gap-2 mb-3">
     <a href="{{ url_for('admin.create_debate') }}" class="btn btn-success w-100 w-md-auto">Create New Debate</a>
     <a href="{{ url_for('admin.manage_users') }}" class="btn btn-secondary w-100 w-md-auto">User Management</a>
+    <a href="{{ url_for('admin.manage_pending_users') }}" class="btn btn-warning w-100 w-md-auto">Pending Registrations</a>
   </div>
 
   {% if debates %}
@@ -39,6 +40,9 @@
             <a href="{{ url_for('admin.toggle_voting', debate_id=debate.id) }}" class="btn btn-outline-warning btn-sm flex-fill flex-md-grow-0">
               {% if debate.voting_open %}Close Voting{% else %}Open Voting{% endif %}
             </a>
+            {% if debate.second_voting_topics and not debate.second_voting_open %}
+            <a href="{{ url_for('admin.open_second_voting', debate_id=debate.id) }}" class="btn btn-outline-warning btn-sm flex-fill flex-md-grow-0">Open Second Voting</a>
+            {% endif %}
             <a href="{{ url_for('admin.toggle_active', debate_id=debate.id) }}" class="btn btn-outline-secondary btn-sm flex-fill flex-md-grow-0">
               {% if debate.active %}Set Inactive{% else %}Set Active{% endif %}
             </a>

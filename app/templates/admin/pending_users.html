@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Pending Registrations{% endblock %}
+{% block content %}
+<h2>Pending Registrations</h2>
+<table class="table table-bordered table-striped">
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>Name</th>
+      <th>Email</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for p in pending_users %}
+    <tr>
+      <td>{{ p.id }}</td>
+      <td>{{ p.first_name }} {{ p.last_name }}</td>
+      <td>{{ p.email }}</td>
+      <td>
+        <form action="{{ url_for('admin.confirm_pending_user', pending_id=p.id) }}" method="post" style="display:inline;">
+          <button class="btn btn-sm btn-success">Confirm</button>
+        </form>
+        <form action="{{ url_for('admin.delete_pending_user', pending_id=p.id) }}" method="post" style="display:inline;">
+          <button class="btn btn-sm btn-danger">Delete</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+<a href="{{ url_for('admin.admin_dashboard') }}" class="btn btn-link">Back to Admin Dashboard</a>
+{% endblock %}

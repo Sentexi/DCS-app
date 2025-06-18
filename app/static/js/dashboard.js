@@ -13,7 +13,21 @@ function populateVoteBox() {
     const list = document.createElement('ul');
     topics.topics.forEach(t => {
       const li = document.createElement('li');
-      li.textContent = t.text + ' ';
+      const span = document.createElement('span');
+      span.textContent = t.text + ' ';
+      li.appendChild(span);
+      if (t.factsheet) {
+        const details = document.createElement('details');
+        details.classList.add('d-inline-block', 'ms-2');
+        const summary = document.createElement('summary');
+        summary.textContent = 'Factsheet';
+        details.appendChild(summary);
+        const div = document.createElement('div');
+        div.classList.add('factsheet-content');
+        div.textContent = t.factsheet;
+        details.appendChild(div);
+        li.appendChild(details);
+      }
       if (status.user_votes.includes(t.id)) {
         const strong = document.createElement('strong');
         strong.textContent = '\u2014 You voted';
@@ -258,6 +272,9 @@ socket.on('debate_status', data => {
   } else {
     cont.style.display = 'none';
   }
+  if (typeof data.second_voting_open !== 'undefined') {
+    window.secondVotingOpen = data.second_voting_open;
+  }
 });
 
 socket.on('assignments_ready', data => {
@@ -274,6 +291,29 @@ socket.on('topic_list_update', data => {
   const voteBox = document.getElementById('voteBoxContainer');
   if (voteBox && (window.votingOpen === true || window.votingOpen === 'true')) {
     populateVoteBox();
+  }
+});
+
+socket.on('winning_topic', data => {
+  if (data.debate_id !== window.currentDebateId) return;
+  const winEl = document.getElementById('winningTopic');
+  const factEl = document.getElementById('winningFactsheet');
+  if (winEl) {
+    if (data.topic) {
+      winEl.textContent = `Winning topic: ${data.topic.text}`;
+      winEl.style.display = 'block';
+      if (factEl) {
+        if (data.topic.factsheet) {
+          factEl.textContent = data.topic.factsheet;
+          factEl.style.display = 'block';
+        } else {
+          factEl.style.display = 'none';
+        }
+      }
+    } else {
+      winEl.style.display = 'none';
+      if (factEl) factEl.style.display = 'none';
+    }
   }
 });
 
@@ -323,6 +363,26 @@ function updateCurrentDebate(data) {
     }
   }
 
+  const winEl = document.getElementById('winningTopic');
+  const factEl = document.getElementById('winningFactsheet');
+  if (winEl) {
+    if (data && data.winner_topic) {
+      winEl.textContent = `Winning topic: ${data.winner_topic.text}`;
+      winEl.style.display = 'block';
+      if (factEl) {
+        if (data.winner_topic.factsheet) {
+          factEl.textContent = data.winner_topic.factsheet;
+          factEl.style.display = 'block';
+        } else {
+          factEl.style.display = 'none';
+        }
+      }
+    } else {
+      winEl.style.display = 'none';
+      if (factEl) factEl.style.display = 'none';
+    }
+  }
+
   const noDebateMsg = document.getElementById('noDebateMessage');
   if (noDebateMsg) {
     noDebateMsg.style.display = data ? 'none' : 'block';
@@ -330,6 +390,7 @@ function updateCurrentDebate(data) {
 
   window.currentDebateId = data ? data.id : null;
   window.votingOpen = data ? data.voting_open : false;
+  window.secondVotingOpen = data ? data.second_voting_open : false;
   window.assignmentsComplete = data ? data.assignment_complete : false;
   window.currentDebateStyle = data ? data.style : '';
   window.userHasSlot = data && data.user_role ? true : false;
