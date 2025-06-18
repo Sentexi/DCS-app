@@ -49,7 +49,14 @@ def view():
         ).first()
         role = slot.role.split('-')[0] if slot else None
 
-        if debate.style == "BP":
+        style = debate.style
+        if slot:
+            room_slots = SpeakerSlot.query.filter_by(
+                debate_id=res.debate_id, room=slot.room
+            ).all()
+            style = infer_room_style(debate.style, room_slots)
+
+        if style == "BP":
             team = role
             if team:
                 bp = BpRank.query.filter_by(
@@ -57,7 +64,7 @@ def view():
                 ).first()
                 if bp:
                     rank = bp.rank
-        elif debate.style == "OPD" and role in ("Gov", "Opp"):
+        elif style == "OPD" and role in ("Gov", "Opp"):
             gov_total = (
                 db.session.query(func.sum(OpdResult.points))
                 .join(
@@ -97,6 +104,7 @@ def view():
                 "elo_change": change,
                 "rank": rank,
                 "win": win,
+                "style": style,
             }
         )
 
