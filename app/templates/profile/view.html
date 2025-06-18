@@ -38,9 +38,19 @@
     <li class="list-group-item debate-item" style="display:none;">
       <strong>{{ item.debate.title }}</strong> ({{ item.debate.style }}) -
       {% if item.debate.style == 'BP' %}
-        Place {{ item.rank or '?' }}, Elo {{ '%+.0f'|format(item.elo_change or 0) }}
+        {% set colors = {1:'primary',2:'success',3:'warning text-dark',4:'danger'} %}
+        {% set labels = {1:'1st',2:'2nd',3:'3rd',4:'4th'} %}
+        {% if item.rank %}
+          <span class="badge bg-{{ colors.get(item.rank, 'secondary') }}">{{ labels.get(item.rank, item.rank ~ 'th') }}</span>
+        {% else %}
+          <span class="badge bg-secondary">?</span>
+        {% endif %}
+        , Elo {{ '%+.0f'|format(item.elo_change or 0) }}
       {% else %}
-        {{ '%.1f pts'|format(item.points) }}
+        {% if item.win is not none %}
+          <span class="badge bg-{{ 'success' if item.win else 'danger' }}">{{ 'Won' if item.win else 'Lost' }}</span>
+        {% endif %}
+        {{ ' %.1f pts'|format(item.points) }}
       {% endif %}
     </li>
   {% endfor %}
