@@ -35,7 +35,8 @@
 <h5 class="mt-4">Recent Debates</h5>
 <ul id="debateList" class="list-group mb-2">
   {% for item in recent_debates %}
-    <li class="list-group-item debate-item" style="display:none;">
+    <li class="list-group-item debate-item d-flex justify-content-between align-items-center" style="display:none;">
+     <span>
       <strong>{{ item.debate.title }}</strong> ({{ item.style }}) -
       {% if item.style == 'BP' %}
         {% set colors = {1:'primary',2:'success',3:'warning text-dark',4:'danger'} %}
@@ -52,6 +53,8 @@
         {% endif %}
         {{ ' %.1f pts'|format(item.points) }}
       {% endif %}
+      </span>
+      <a href="{{ url_for('profile.debate_results', debate_id=item.debate.id) }}" class="btn btn-outline-primary btn-sm">Results</a>
     </li>
   {% endfor %}
 </ul>
