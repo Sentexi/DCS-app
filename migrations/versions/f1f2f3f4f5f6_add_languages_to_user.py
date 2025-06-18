@@ -1,7 +1,7 @@
 """add languages column to user"""
 
 revision = 'f1f2f3f4f5f6'
-down_revision = '0d2e6c501f2d'
+down_revision = '58db3b0d3a96'
 branch_labels = None
 depends_on = None
 
