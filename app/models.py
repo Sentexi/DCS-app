@@ -62,6 +62,7 @@ class User(UserMixin, db.Model):
     debate_count = db.Column(db.Integer, default=0)
     last_seen = db.Column(db.DateTime, default=datetime.utcnow)
     elo_rating = db.Column(db.Integer, default=1000)
+    elo_sigma = db.Column(db.Float, default=1000/3)
     opd_skill = db.Column(db.Float, nullable=True)
 
     # Relationship: which votes has this user cast?
