@@ -1,7 +1,7 @@
 """add elo_sigma to user model"""
 
 revision = '58db3b0d3a96'
-down_revision = '7c29a14798c9'
+down_revision = '1c4cfe455b23'
 branch_labels = None
 depends_on = None
 
