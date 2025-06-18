@@ -334,6 +334,7 @@ def edit_user(user_id):
     if request.method == 'POST':
         user.debate_skill = request.form.get('debate_skill') or None
         user.judge_skill = request.form.get('judge_skill') or None
+        user.languages = request.form.get('languages') or None
         elo = request.form.get('elo_rating')
         sigma = request.form.get('elo_sigma')
         try:

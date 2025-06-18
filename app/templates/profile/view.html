@@ -15,11 +15,16 @@
     <label class="form-label">Email</label>
     <input name="email" class="form-control" value="{{ current_user.email }}">
   </div>
+  <div class="mb-3">
+    <label class="form-label">Languages</label>
+    <input name="languages" class="form-control" value="{{ current_user.languages }}">
+  </div>
   <button type="submit" class="btn btn-primary">Update</button>
 </form>
 <hr>
 <p><strong>Debate Skill:</strong> {{ current_user.debate_skill or '—' }}</p>
 <p><strong>Judge Skill:</strong> {{ current_user.judge_skill or '—' }}</p>
+<p><strong>Languages:</strong> {{ current_user.languages or '—' }}</p>
 <p><strong>Debates Participated:</strong> {{ current_user.debate_count or 0 }}</p>
 <p><strong>BP Ranking:</strong> {{ '%.0f'|format(current_user.elo_rating) }} &plusmn; {{ '%.0f'|format(current_user.elo_sigma) }}</p>
 <p><strong>OPD Skill:</strong>

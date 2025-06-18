@@ -11,16 +11,19 @@ from . import profile_bp
 @login_required
 def view():
     if request.method == 'POST':
-        # Allow editing name and email only
+        # Allow editing name, email and languages
         first_name = request.form.get('first_name')
         last_name = request.form.get('last_name')
         email = request.form.get('email')
+        languages = request.form.get('languages')
         if first_name and first_name != current_user.first_name:
             current_user.first_name = first_name
         if last_name is not None and last_name != current_user.last_name:
             current_user.last_name = last_name
         if email and email != current_user.email:
             current_user.email = email
+        if languages is not None and languages != current_user.languages:
+            current_user.languages = languages
         db.session.commit()
         flash('Profile updated.', 'success')
         return redirect(url_for('profile.view'))
