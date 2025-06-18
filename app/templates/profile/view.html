@@ -21,7 +21,7 @@
 <p><strong>Debate Skill:</strong> {{ current_user.debate_skill or '—' }}</p>
 <p><strong>Judge Skill:</strong> {{ current_user.judge_skill or '—' }}</p>
 <p><strong>Debates Participated:</strong> {{ current_user.debate_count or 0 }}</p>
-<p><strong>BP Ranking:</strong> {{ current_user.elo_rating }} &plusmn; {{ '%.1f'|format(current_user.elo_sigma) }}</p>
+<p><strong>BP Ranking:</strong> {{ '%.0f'|format(current_user.elo_rating) }} &plusmn; {{ '%.1f'|format(current_user.elo_sigma) }}</p>
 <p><strong>OPD Skill:</strong>
   {% if opd_result_count == 0 %}
     None
@@ -38,7 +38,7 @@
     <li class="list-group-item debate-item" style="display:none;">
       <strong>{{ item.debate.title }}</strong> ({{ item.debate.style }}) -
       {% if item.debate.style == 'BP' %}
-        Place {{ item.rank or '?' }}, Elo {{ '%+.1f'|format(item.elo_change or 0) }}
+        Place {{ item.rank or '?' }}, Elo {{ '%+.0f'|format(item.elo_change or 0) }}
       {% else %}
         {{ '%.1f pts'|format(item.points) }}
       {% endif %}

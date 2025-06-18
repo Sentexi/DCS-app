@@ -34,7 +34,7 @@ def compute_bp_elo(slots: List[SpeakerSlot], ranks: Dict[str, int]) -> List[Tupl
         for player_idx, slot in enumerate(teams[team]):
             old_mu = float(slot.user.elo_rating or DEFAULT_MU)
             old_sigma = float(getattr(slot.user, 'elo_sigma', DEFAULT_SIGMA) or DEFAULT_SIGMA)
-            new_mu = float(new_ratings[team_idx][player_idx].mu)
+            new_mu = round(float(new_ratings[team_idx][player_idx].mu), 2)
             new_sigma = float(new_ratings[team_idx][player_idx].sigma)
             slot.user.elo_rating = new_mu
             if hasattr(slot.user, 'elo_sigma'):
