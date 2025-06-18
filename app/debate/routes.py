@@ -7,6 +7,19 @@ from app.logic.elo import compute_bp_elo
 from . import debate_bp
 
 
+def infer_room_style(debate_style, speaker_slots):
+    """Infer the debating style for a set of slots within a dynamic debate."""
+    style = debate_style
+    if debate_style == 'Dynamic':
+        roles = {sp.role.split('-')[0] for sp in speaker_slots}
+        opd_markers = {'Gov', 'Opp'}
+        if roles & opd_markers or any(r.startswith('Free') for r in roles):
+            style = 'OPD'
+        else:
+            style = 'BP'
+    return style
+
+
 def get_chair_slot(user, debate_id):
     """Return chair slot for a user in a debate or None."""
     return SpeakerSlot.query.filter_by(
@@ -30,13 +43,21 @@ def judging(debate_id):
 
     room = chair_slot.room
 
+    speakers = SpeakerSlot.query.filter(
+        SpeakerSlot.debate_id == debate_id,
+        SpeakerSlot.room == room,
+        ~SpeakerSlot.role.startswith('Judge')
+    ).all()
+
     judges = SpeakerSlot.query.filter(
         SpeakerSlot.debate_id == debate_id,
         SpeakerSlot.room == room,
         SpeakerSlot.role.startswith('Judge')
     ).all()
 
-    if debate.style == 'BP':
+    room_style = infer_room_style(debate.style, speakers)
+
+    if room_style == 'BP':
         if request.method == 'POST':
             BpRank.query.filter_by(debate_id=debate_id).delete()
             for team in ['OG', 'OO', 'CG', 'CO']:
@@ -49,11 +70,6 @@ def judging(debate_id):
         existing = {r.team: r.rank for r in BpRank.query.filter_by(debate_id=debate_id).all()}
         return render_template('debate/judging_bp.html', debate=debate, existing=existing)
 
-    speakers = SpeakerSlot.query.filter(
-        SpeakerSlot.debate_id == debate_id,
-        SpeakerSlot.room == room,
-        ~SpeakerSlot.role.startswith('Judge')
-    ).all()
     speaker_ids = [sp.user_id for sp in speakers]
     judge_ids = [j.user_id for j in judges]
 
@@ -116,14 +132,7 @@ def finalize(debate_id):
     OpdResult.query.filter_by(debate_id=debate_id).delete()
     EloLog.query.filter_by(debate_id=debate_id).delete()
 
-    room_style = debate.style
-    if debate.style == 'Dynamic':
-        roles = {sp.role.split('-')[0] for sp in speaker_slots}
-        opd_markers = {'Gov', 'Opp'}
-        if roles & opd_markers or any(r.startswith('Free') for r in roles):
-            room_style = 'OPD'
-        else:
-            room_style = 'BP'
+    room_style = infer_room_style(debate.style, speaker_slots)
 
     if room_style == 'OPD':
         for sp in speaker_slots:
