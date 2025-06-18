@@ -2,6 +2,7 @@ from flask import render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
 from app.extensions import db
 from app.models import OpdResult, Debate, EloLog, SpeakerSlot, BpRank
+from app.debate.routes import infer_room_style
 from sqlalchemy.sql import func
 from . import profile_bp
 
@@ -47,7 +48,14 @@ def view():
         ).first()
         role = slot.role.split('-')[0] if slot else None
 
-        if debate.style == "BP":
+        style = debate.style
+        if slot:
+            room_slots = SpeakerSlot.query.filter_by(
+                debate_id=res.debate_id, room=slot.room
+            ).all()
+            style = infer_room_style(debate.style, room_slots)
+
+        if style == "BP":
             team = role
             if team:
                 bp = BpRank.query.filter_by(
@@ -55,7 +63,7 @@ def view():
                 ).first()
                 if bp:
                     rank = bp.rank
-        elif debate.style == "OPD" and role in ("Gov", "Opp"):
+        elif style == "OPD" and role in ("Gov", "Opp"):
             gov_total = (
                 db.session.query(func.sum(OpdResult.points))
                 .join(
@@ -95,6 +103,7 @@ def view():
                 "elo_change": change,
                 "rank": rank,
                 "win": win,
+                "style": style,
             }
         )
 

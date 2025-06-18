@@ -36,8 +36,8 @@
 <ul id="debateList" class="list-group mb-2">
   {% for item in recent_debates %}
     <li class="list-group-item debate-item" style="display:none;">
-      <strong>{{ item.debate.title }}</strong> ({{ item.debate.style }}) -
-      {% if item.debate.style == 'BP' %}
+      <strong>{{ item.debate.title }}</strong> ({{ item.style }}) -
+      {% if item.style == 'BP' %}
         {% set colors = {1:'primary',2:'success',3:'warning text-dark',4:'danger'} %}
         {% set labels = {1:'1st',2:'2nd',3:'3rd',4:'4th'} %}
         {% if item.rank %}
