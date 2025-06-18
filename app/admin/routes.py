@@ -323,6 +323,33 @@ def toggle_user_admin(user_id):
     db.session.commit()
     flash(f"User '{user.first_name} {user.last_name}' admin status changed.", "info")
     return redirect(url_for('admin.manage_users'))
+
+
+@admin_bp.route('/admin/users/<int:user_id>/edit', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def edit_user(user_id):
+    from app.models import User
+    user = User.query.get_or_404(user_id)
+    if request.method == 'POST':
+        user.debate_skill = request.form.get('debate_skill') or None
+        user.judge_skill = request.form.get('judge_skill') or None
+        elo = request.form.get('elo_rating')
+        sigma = request.form.get('elo_sigma')
+        try:
+            if elo:
+                user.elo_rating = float(elo)
+        except ValueError:
+            flash('Invalid Elo rating.', 'danger')
+        try:
+            if sigma:
+                user.elo_sigma = float(sigma)
+        except ValueError:
+            flash('Invalid Elo sigma.', 'danger')
+        db.session.commit()
+        flash('User updated.', 'success')
+        return redirect(url_for('admin.manage_users'))
+    return render_template('admin/edit_user.html', user=user)
     
 @admin_bp.route('/admin/<int:debate_id>/assign', methods=['POST'])
 @login_required
