@@ -21,7 +21,7 @@
 <p><strong>Debate Skill:</strong> {{ current_user.debate_skill or '—' }}</p>
 <p><strong>Judge Skill:</strong> {{ current_user.judge_skill or '—' }}</p>
 <p><strong>Debates Participated:</strong> {{ current_user.debate_count or 0 }}</p>
-<p><strong>BP Ranking:</strong> {{ current_user.elo_rating }}</p>
+<p><strong>BP Ranking:</strong> {{ current_user.elo_rating }} &plusmn; {{ '%.1f'|format(current_user.elo_sigma) }}</p>
 <p><strong>OPD Skill:</strong>
   {% if opd_result_count == 0 %}
     None
