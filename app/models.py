@@ -76,7 +76,16 @@ class User(UserMixin, db.Model):
         return SpeakerSlot.query.filter_by(debate_id=debate_id, user_id=self.id).first()
 
     def recent_opd_results(self, n=5):
-        return OpdResult.query.filter_by(user_id=self.id).order_by(OpdResult.id.desc()).limit(n).all()
+        return (
+            OpdResult.query.join(Debate, OpdResult.debate_id == Debate.id)
+            .filter(
+                OpdResult.user_id == self.id,
+                Debate.style == "OPD"
+            )
+            .order_by(OpdResult.id.desc())
+            .limit(n)
+            .all()
+        )
 
     def opd_skill_level(self, n=5):
         results = self.recent_opd_results(n)
@@ -89,7 +98,7 @@ class User(UserMixin, db.Model):
             OpdResult.query.join(Debate, OpdResult.debate_id == Debate.id)
             .filter(
                 OpdResult.user_id == self.id,
-                Debate.style.in_(("OPD", "Dynamic"))
+                Debate.style == "OPD"
             )
             .order_by(OpdResult.id.desc())
             .limit(n)
@@ -102,10 +111,14 @@ class User(UserMixin, db.Model):
         return len(results)
 
     def opd_result_count(self):
-        return OpdResult.query.join(Debate, OpdResult.debate_id == Debate.id).filter(
-            OpdResult.user_id == self.id,
-            Debate.style.in_(("OPD", "Dynamic"))
-        ).count()
+        return (
+            OpdResult.query.join(Debate, OpdResult.debate_id == Debate.id)
+            .filter(
+                OpdResult.user_id == self.id,
+                Debate.style == "OPD"
+            )
+            .count()
+        )
 
     def __repr__(self):
         return f'<User {self.first_name} {self.last_name}>'
