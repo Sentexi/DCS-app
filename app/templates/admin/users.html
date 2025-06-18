@@ -14,6 +14,9 @@
       <th>Debate Skill</th>
       <th>Judge Skill</th>
       <th>Debates Participated</th>
+      <th>OPD Avg</th>
+      <th>BP Elo</th>
+      <th>Sigma</th>
       <th>Actions</th>
     </tr>
   </thead>
@@ -29,6 +32,9 @@
       <td>{{ user.debate_skill or "—" }}</td>
       <td>{{ user.judge_skill or "—" }}</td>
       <td>{{ user.debate_count or 0 }}</td>
+      <td>{{ '%.1f'|format(user.opd_skill) if user.opd_skill is not none else "—" }}</td>
+      <td>{{ '%.0f'|format(user.elo_rating) if user.elo_rating is not none else "—" }}</td>
+      <td>{{ '%.0f'|format(user.elo_sigma) if user.elo_sigma is not none else "—" }}</td>
       <td>
         <form action="{{ url_for('admin.toggle_user_admin', user_id=user.id) }}" method="post" style="display:inline;">
             <button type="submit" class="btn btn-sm btn-warning">
