@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Results: {{ debate.title }}{% endblock %}
+{% block content %}
+<h2 class="mb-4">Results for {{ debate.title }}</h2>
+
+{% for room in slots_by_room.keys()|sort %}
+  <h4 class="mt-3">Room {{ room }} ({{ room_styles[room] }})</h4>
+  {% if room_styles[room] == 'BP' %}
+    <div class="table-responsive">
+      <table class="table table-bordered align-middle">
+        <thead class="table-light">
+          <tr><th>Team</th><th>Speakers</th><th>Rank</th></tr>
+        </thead>
+        <tbody>
+        {% for team in ['OG','OO','CG','CO'] %}
+          <tr>
+            <td>{{ team }}</td>
+            <td>
+              {% set slots = slots_by_room[room]|selectattr('role','equalto',team)|list %}
+              {% if slots %}
+                {% for slot in slots %}
+                  {{ user_map[slot.user_id].first_name }} {{ user_map[slot.user_id].last_name }}<br>
+                {% endfor %}
+              {% else %}
+                <em>&mdash;</em>
+              {% endif %}
+            </td>
+            <td>{{ bp_ranks.get(team) or '?' }}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="table-responsive">
+      <table class="table table-bordered align-middle">
+        <thead class="table-light">
+          <tr><th>Role</th><th>Name</th><th>Points</th></tr>
+        </thead>
+        <tbody>
+        {% for slot in slots_by_room[room] if not slot.role.startswith('Judge') %}
+          <tr>
+            <td>{{ slot.role }}</td>
+            <td>{{ user_map[slot.user_id].first_name }} {{ user_map[slot.user_id].last_name }}</td>
+            <td>{{ '%.1f'|format(opd_points.get(slot.user_id, 0)) }}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <p><strong>Gov Total:</strong> {{ '%.1f'|format(gov_total.get(room,0)) }} &nbsp;
+       <strong>Opp Total:</strong> {{ '%.1f'|format(opp_total.get(room,0)) }}</p>
+  {% endif %}
+{% endfor %}
+
+<a href="{{ url_for('profile.view') }}" class="btn btn-secondary mt-4">Back to Profile</a>
+{% endblock %}

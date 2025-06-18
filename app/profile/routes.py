@@ -1,8 +1,10 @@
 from flask import render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
 from app.extensions import db
-from app.models import OpdResult, Debate, EloLog, SpeakerSlot, BpRank
+from app.models import OpdResult, Debate, EloLog, SpeakerSlot, BpRank, User
+from app.debate.routes import infer_room_style
 from sqlalchemy.sql import func
+from sqlalchemy.orm import joinedload
 from . import profile_bp
 
 @profile_bp.route('/profile', methods=['GET', 'POST'])
@@ -99,3 +101,48 @@ def view():
         )
 
     return render_template('profile/view.html', opd_result_count=opd_result_count, recent_debates=recent_debates)
+
+
+@profile_bp.route('/profile/debate/<int:debate_id>/results')
+@login_required
+def debate_results(debate_id):
+    debate = Debate.query.options(
+        joinedload(Debate.speakerslots)
+    ).get_or_404(debate_id)
+
+    slots_by_room = {}
+    for slot in debate.speakerslots:
+        slots_by_room.setdefault(slot.room, []).append(slot)
+
+    room_styles = {}
+    for room, slots in slots_by_room.items():
+        room_styles[room] = infer_room_style(debate.style, slots)
+
+    user_ids = [s.user_id for s in debate.speakerslots]
+    user_map = {u.id: u for u in User.query.filter(User.id.in_(user_ids)).all()}
+
+    opd_points = {
+        r.user_id: r.points for r in OpdResult.query.filter_by(debate_id=debate_id).all()
+    }
+
+    gov_total = {}
+    opp_total = {}
+    for room, slots in slots_by_room.items():
+        if room_styles[room] != 'OPD':
+            continue
+        gov_total[room] = sum(opd_points.get(s.user_id, 0) for s in slots if s.role.startswith('Gov'))
+        opp_total[room] = sum(opd_points.get(s.user_id, 0) for s in slots if s.role.startswith('Opp'))
+
+    bp_ranks = {r.team: r.rank for r in BpRank.query.filter_by(debate_id=debate_id).all()}
+
+    return render_template(
+        'profile/debate_results.html',
+        debate=debate,
+        slots_by_room=slots_by_room,
+        room_styles=room_styles,
+        user_map=user_map,
+        opd_points=opd_points,
+        gov_total=gov_total,
+        opp_total=opp_total,
+        bp_ranks=bp_ranks,
+    )
