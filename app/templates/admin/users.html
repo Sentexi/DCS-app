@@ -35,14 +35,23 @@
       <td>{{ '%.1f'|format(user.opd_skill) if user.opd_skill is not none else "—" }}</td>
       <td>{{ '%.0f'|format(user.elo_rating) if user.elo_rating is not none else "—" }}</td>
       <td>{{ '%.0f'|format(user.elo_sigma) if user.elo_sigma is not none else "—" }}</td>
-      <td>
-        <form action="{{ url_for('admin.toggle_user_admin', user_id=user.id) }}" method="post" style="display:inline;">
-            <button type="submit" class="btn btn-sm btn-warning">
-                {% if user.is_admin %}Revoke Admin{% else %}Make Admin{% endif %}
-            </button>
-        </form>
-        <a href="{{ url_for('admin.edit_user', user_id=user.id) }}" class="btn btn-sm btn-primary ms-1">Edit</a>
-      </td>
+		<td class="py-2">
+		  <!-- Flex row with a little spacing between children -->
+		  <div class="d-flex gap-1">
+			<form action="{{ url_for('admin.toggle_user_admin', user_id=user.id) }}"
+				  method="post"
+				  class="m-0">           <!-- remove default form margins -->
+			  <button type="submit" class="btn btn-sm btn-warning">
+				{% if user.is_admin %}Revoke Admin{% else %}Make Admin{% endif %}
+			  </button>
+			</form>
+
+			<a href="{{ url_for('admin.edit_user', user_id=user.id) }}"
+			   class="btn btn-sm btn-primary d-flex align-items-center justify-content-center">
+			   Edit
+			</a>
+		  </div>
+		</td>
     </tr>
     {% endfor %}
   </tbody>
