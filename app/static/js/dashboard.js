@@ -89,6 +89,11 @@ function createBadge(slot) {
     em.textContent = ' (You)';
     span.appendChild(em);
   }
+  span.appendChild(document.createElement('br'));
+  const small = document.createElement('small');
+  small.classList.add('text-muted');
+  small.textContent = `Elo ${Math.round(slot.elo)}`;
+  span.appendChild(small);
   return span;
 }
 

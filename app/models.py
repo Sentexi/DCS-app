@@ -121,6 +121,22 @@ class User(UserMixin, db.Model):
             .count()
         )
 
+    def display_elo(self):
+        """Return elo or estimated rating when sigma is high."""
+        sigma = getattr(self, "elo_sigma", None)
+        if sigma is not None and sigma <= 320:
+            return float(getattr(self, "elo_rating", 1000))
+
+        exp_map = {
+            "First Timer": 0,
+            "Beginner": 1,
+            "Intermediate": 2,
+            "Advanced": 3,
+            "Expert": 4,
+        }
+        exp = exp_map.get(getattr(self, "debate_skill", "First Timer"), 0)
+        return 1000 + exp * 50
+
     def __repr__(self):
         return f'<User {self.first_name} {self.last_name}>'
 
