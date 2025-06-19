@@ -92,7 +92,11 @@ function createBadge(slot) {
   span.appendChild(document.createElement('br'));
   const small = document.createElement('small');
   small.classList.add('text-muted');
-  small.textContent = `Elo ${Math.round(slot.elo)}`;
+  let txt = `Elo ${Math.round(slot.elo)}`;
+  if (slot.opd_points !== null && slot.opd_points !== undefined) {
+    txt += ` | OPD ${slot.opd_points.toFixed(1)}`;
+  }
+  small.textContent = txt;
   span.appendChild(small);
   return span;
 }

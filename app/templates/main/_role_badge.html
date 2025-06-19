@@ -13,5 +13,9 @@
   {% endif %}
   {{ slot.role }}<br>
   {{ slot.user.first_name }} {{ slot.user.last_name }}{% if user.id == slot.user_id %} <em>(You)</em>{% endif %}<br>
-  <small class="text-muted">Elo {{ '%.0f'|format(slot.user.display_elo()) }}</small>
+  {% set opd_points = slot.user.opd_skill if slot.user.opd_skill is not none else slot.user.opd_skill_level() %}
+  <small class="text-muted">
+    Elo {{ '%.0f'|format(slot.user.display_elo()) }}
+    {% if opd_points is not none %}| OPD {{ '%.1f'|format(opd_points) }}{% endif %}
+  </small>
 </span>
