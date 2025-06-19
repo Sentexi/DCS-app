@@ -25,6 +25,10 @@ These settings can be provided via environment variables or by modifying
 - **CORS_ALLOWED_ORIGINS** - origins allowed for CORS and SocketIO.
   Provide a comma-separated list (e.g. `https://example.com`). Default: `*`.
 - **PORT** - port used when running `python run.py`. Default: `5000`.
+- **SERVER_NAME** - domain name used for external URLs, e.g. in
+  confirmation emails. If unset, Flask uses the request host.
+- **PREFERRED_URL_SCHEME** - scheme used for URLs generated with
+  `url_for(..., _external=True)`. Default: `http`.
 
 ## 🚀 Production Deployment with uWSGI
 
