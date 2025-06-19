@@ -27,13 +27,13 @@ def _skill_for(user: User, style: str) -> float:
         if sigma is not None and sigma <= 320:
             return float(getattr(user, "elo_rating", 1000))
         exp = _EXP_MAP.get(getattr(user, "debate_skill", "First Timer"), 0)
-        return 1000 + exp * 50
+        return 700 + exp * 150
 
     # OPD
     if getattr(user, "opd_skill", None) is not None:
         return float(user.opd_skill)
     exp = _EXP_MAP.get(getattr(user, "debate_skill", "First Timer"), 0)
-    return 50 + exp * 5
+    return 35 + exp * 3.5
 
 
 def _overall_skill(user: User) -> float:
