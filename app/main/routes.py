@@ -297,7 +297,8 @@ def debate_assignments_json(debate_id):
             'role': s.role,
             'room': s.room,
             'user_id': s.user_id,
-            'name': f"{s.user.first_name} {s.user.last_name}"
+            'name': f"{s.user.first_name} {s.user.last_name}",
+            'elo': s.user.display_elo()
         } for s in slots
     ]
 
