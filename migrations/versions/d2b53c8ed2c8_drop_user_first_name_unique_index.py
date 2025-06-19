@@ -1,4 +1,10 @@
-"""Remove UNIQUE from first_name, add UNIQUE on email"""
+"""Remove UNIQUE from first_name
+
+Revision ID: d2b53c8ed2c8
+Revises: f1f2f3f4f5f6
+Create Date: ...
+
+"""
 
 revision = "d2b53c8ed2c8"
 down_revision = "f1f2f3f4f5f6"
@@ -10,21 +16,29 @@ import sqlalchemy as sa
 def upgrade():
     """
     This function is executed when you run 'flask db upgrade'.
-    It removes the unique constraint from the 'first_name' column.
+    It alters the 'first_name' column to remove its unique property.
     """
-    # Use Alembic's batch mode for SQLite compatibility.
+    print("Altering 'first_name' column to remove UNIQUE constraint...")
     with op.batch_alter_table('user', schema=None) as batch_op:
-        # Drop the unique constraint using the correct name found in your schema.
-        batch_op.drop_constraint('uq_user_first_name', type_='unique')
+        # This is the correct, declarative way to remove a unique constraint.
+        # We describe the column's final state (unique=False).
+        # Alembic's batch mode handles the table recreation for us.
+        batch_op.alter_column('first_name',
+               existing_type=sa.VARCHAR(length=80),
+               unique=False,
+               existing_nullable=False)
+
+    print("UNIQUE constraint on 'first_name' removed successfully.")
 
 
 def downgrade():
     """
     This function is executed when you run 'flask db downgrade'.
-    It re-adds the unique constraint to the 'first_name' column.
+    It re-adds a unique constraint to the 'first_name' column.
     """
-    # Use Alembic's batch mode for SQLite compatibility.
+    print("Re-creating unique constraint on 'first_name'...")
     with op.batch_alter_table('user', schema=None) as batch_op:
-        # Re-create the unique constraint with the specific name for consistency.
+        # Re-creating the constraint explicitly is clean and robust.
         batch_op.create_unique_constraint('uq_user_first_name', ['first_name'])
-
+        
+    print("Unique constraint on 'first_name' re-created.")
