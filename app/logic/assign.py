@@ -109,22 +109,21 @@ def _allocate_by_mode(users: List[User], counts: List[int], settings: List[Tuple
 
     if mode == "Skill based":
         ranked = sorted(pool, key=lambda u: _skill_for(u, style), reverse=True)
-        half = len(counts) // 2
-        high_rooms = counts[:half]
-        low_rooms = counts[half:]
-        for idx in range(half):
-            cnt = counts[idx]
-            rooms[idx] = ranked[:cnt]
-            ranked = ranked[cnt:]
-        for idx in range(half, len(counts)):
-            cnt = counts[idx]
-            rooms[idx] = ranked[-cnt:]
-            ranked = ranked[:-cnt]
+        start_idx = 0
+        for idx, cnt in enumerate(counts):
+            rooms[idx] = ranked[start_idx:start_idx + cnt]
+            start_idx += cnt
 
         # ensure a Chair judge in every room
         for idx, room in enumerate(rooms):
             if not any(getattr(u, "judge_skill", "") == "Chair" for u in room):
-                chair = next((u for u in pool if getattr(u, "judge_skill", "") == "Chair" and u not in room), None)
+                chair = next(
+                    (
+                        u for u in pool
+                        if getattr(u, "judge_skill", "") == "Chair" and u not in room
+                    ),
+                    None,
+                )
                 if chair:
                     room[0], _ = chair, room[0]
                 else:
