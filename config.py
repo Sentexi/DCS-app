@@ -6,6 +6,8 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = os.getenv('SQLALCHEMY_TRACK_MODIFICATIONS', 'False').lower() in ('true', '1')
     CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', '*')
     PORT = int(os.getenv('PORT', 5000))
+    SERVER_NAME = os.getenv('SERVER_NAME', 'example.com')
+    PREFERRED_URL_SCHEME = os.getenv('PREFERRED_URL_SCHEME', 'http')
 
     # Email configuration
     MAIL_SERVER = os.getenv('MAIL_SERVER', 'localhost')
