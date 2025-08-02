@@ -340,17 +340,20 @@ def debate_join(debate_id):
 
     rooms = sorted({s.room for s in debate.speakerslots}) or [1]
 
-    def assign_judge():
-        judge_counts = []
+    def judge_room_counts():
+        counts = []
         for room in rooms:
             count = SpeakerSlot.query.filter(
                 SpeakerSlot.debate_id == debate_id,
                 SpeakerSlot.room == room,
                 SpeakerSlot.role.like('Judge%'),
             ).count()
-            judge_counts.append((count, room))
-        judge_counts.sort()
-        for count, room in judge_counts:
+            counts.append((count, room))
+        counts.sort()
+        return counts
+
+    def assign_judge():
+        for count, room in judge_room_counts():
             if count < 3:
                 slot = SpeakerSlot(
                     debate_id=debate_id,
@@ -389,7 +392,15 @@ def debate_join(debate_id):
                     return jsonify({'success': True, 'role': role, 'room': room})
         return None
 
-    # Prefer judging if the user has indicated so
+    # Step 1: Ensure each room has at least two judges
+    if current_user.judge_skill in ('Wing', 'Chair'):
+        counts = judge_room_counts()
+        if counts and counts[0][0] < 2:
+            result = assign_judge()
+            if result:
+                return result
+
+    # Step 2 and 3: Respect judging preference or fill speakers first
     if current_user.prefer_judging and current_user.judge_skill in ('Wing', 'Chair'):
         result = assign_judge()
         if result:
