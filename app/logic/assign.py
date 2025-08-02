@@ -126,6 +126,7 @@ def _allocate_by_mode(users: List[User], counts: List[int], settings: List[Tuple
                 )
                 if chair:
                     room[0], _ = chair, room[0]
+                    pool.remove(chair)
                 else:
                     unsafe = True
         return rooms, unsafe, ""
@@ -149,6 +150,7 @@ def _allocate_by_mode(users: List[User], counts: List[int], settings: List[Tuple
                 chair = next((u for u in pool if getattr(u, "judge_skill", "") == "Chair" and u not in room), None)
                 if chair:
                     room[0], _ = chair, room[0]
+                    pool.remove(chair)
                 else:
                     unsafe = True
         return rooms, unsafe, ""
