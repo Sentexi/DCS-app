@@ -17,6 +17,7 @@
   window.userHasSlot = {{ 'true' if user_role else 'false' }};
   window.userIsJudgeChair = {{ 'true' if is_judge_chair else 'false' }};
   window.userJudgeSkill = "{{ current_user.judge_skill or '' }}";
+  window.preferJudging = {{ 'true' if prefers_judging else 'false' }};
 </script>
 
 <div class="container my-4">

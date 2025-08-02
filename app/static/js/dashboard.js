@@ -238,6 +238,12 @@ function updateJoinLaterAvailability() {
         if (freeCount < maxFree) freeAvailable = true;
       });
       const canWing = ['Wing', 'Chair'].includes(window.userJudgeSkill);
+      const prefersJudge = window.preferJudging === true || window.preferJudging === 'true';
+      if (prefersJudge && freeAvailable && wingAvailable && canWing) {
+        btn.textContent = 'Join as Judge';
+      } else {
+        btn.textContent = 'Join Debate';
+      }
       if (freeAvailable || (wingAvailable && canWing)) {
         btn.disabled = false;
         btn.classList.remove('disabled', 'btn-secondary');
