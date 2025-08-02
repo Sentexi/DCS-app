@@ -181,7 +181,7 @@ def finalize(debate_id):
                     )
                 )
                 old = sp.user.elo_rating or 1000
-                new = old + (avg - 50) / 10
+                new = old + (avg - 43) / 10
                 sp.user.elo_rating = new
                 db.session.add(
                     EloLog(
