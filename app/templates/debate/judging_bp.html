@@ -33,4 +33,13 @@ function check() {
 document.querySelectorAll('.rank-input').forEach(i=>i.addEventListener('input', check));
 check();
 </script>
+<script>
+const socket = io();
+const currentDebateId = {{ debate.id }};
+socket.on('assignments_ready', data => {
+  if (data.debate_id === currentDebateId) {
+    window.location.reload();
+  }
+});
+</script>
 {% endblock %}

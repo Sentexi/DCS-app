@@ -53,4 +53,13 @@ function update() {
 update();
 document.querySelectorAll('.score-input').forEach(inp=>inp.addEventListener('input', update));
 </script>
+<script>
+const socket = io();
+const currentDebateId = {{ debate.id }};
+socket.on('assignments_ready', data => {
+  if (data.debate_id === currentDebateId) {
+    window.location.reload();
+  }
+});
+</script>
 {% endblock %}
