@@ -338,27 +338,30 @@ def debate_join(debate_id):
     if existing:
         return jsonify({'success': False, 'message': 'Already assigned to this debate.'}), 400
 
-    # Try to assign as a Free speaker for OPD debates
-    if debate.style == 'OPD':
-        rooms = sorted({s.room for s in debate.speakerslots}) or [1]
-        for room in rooms:
-            free_roles = {
-                s.role for s in debate.speakerslots
-                if s.room == room and s.role.startswith('Free')
-            }
-            for idx in range(1, 4):
-                role = f'Free-{idx}'
-                if role not in free_roles:
-                    slot = SpeakerSlot(
-                        debate_id=debate_id,
-                        user_id=current_user.id,
-                        role=role,
-                        room=room,
-                    )
-                    db.session.add(slot)
-                    db.session.commit()
-                    socketio.emit('assignments_ready', {'debate_id': debate_id})
-                    return jsonify({'success': True, 'role': role, 'room': room})
+    # Try to assign as a Free speaker if any OPD room has an opening
+    rooms = sorted({s.room for s in debate.speakerslots}) or [1]
+    for room in rooms:
+        roles = {s.role for s in debate.speakerslots if s.room == room}
+        # Detect OPD rooms by the presence of Gov/Opp or any Free slot
+        is_opd_room = any(
+            r.startswith('Free') or r in {'Gov', 'Opp'}
+            for r in roles
+        )
+        if not is_opd_room:
+            continue
+        for idx in range(1, 4):
+            role = f'Free-{idx}'
+            if role not in roles:
+                slot = SpeakerSlot(
+                    debate_id=debate_id,
+                    user_id=current_user.id,
+                    role=role,
+                    room=room,
+                )
+                db.session.add(slot)
+                db.session.commit()
+                socketio.emit('assignments_ready', {'debate_id': debate_id})
+                return jsonify({'success': True, 'role': role, 'room': room})
 
     # If no speaker slot, attempt judge assignment based on skill
     if current_user.judge_skill in ('Wing', 'Chair'):
