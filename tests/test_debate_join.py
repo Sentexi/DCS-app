@@ -48,11 +48,13 @@ def create_user(idx, judge_skill='Cant judge'):
     return user
 
 
-def test_join_assigns_first_free_slot(client):
+def test_join_assigns_free_slot_after_judges_filled(client):
     gov = create_user(1)
     opp = create_user(2)
     free1_user = create_user(3)
-    joiner = create_user(4, judge_skill='Wing')
+    judge1 = create_user(4, judge_skill='Chair')
+    judge2 = create_user(5, judge_skill='Wing')
+    joiner = create_user(6, judge_skill='Wing')
 
     debate = Debate(title='Debate', style='OPD', active=True)
     db.session.add(debate)
@@ -62,6 +64,8 @@ def test_join_assigns_first_free_slot(client):
         SpeakerSlot(debate_id=debate.id, user_id=gov.id, role='Gov', room=1),
         SpeakerSlot(debate_id=debate.id, user_id=opp.id, role='Opp', room=1),
         SpeakerSlot(debate_id=debate.id, user_id=free1_user.id, role='Free-1', room=1),
+        SpeakerSlot(debate_id=debate.id, user_id=judge1.id, role='Judge-Chair', room=1),
+        SpeakerSlot(debate_id=debate.id, user_id=judge2.id, role='Judge-Wing', room=1),
     ])
     db.session.commit()
 
@@ -77,14 +81,15 @@ def test_join_assigns_first_free_slot(client):
     assert slot.room == 1
 
 
-def test_dynamic_debate_assigns_free_slot(client):
+def test_join_assigns_judge_when_needed(client):
     og = create_user(1)
     oo = create_user(2)
     cg = create_user(3)
     co = create_user(4)
     gov = create_user(5)
     opp = create_user(6)
-    joiner = create_user(7, judge_skill='Wing')
+    existing_judge = create_user(7, judge_skill='Chair')
+    joiner = create_user(8, judge_skill='Wing')
 
     debate = Debate(title='Dynamic Debate', style='Dynamic', active=True)
     db.session.add(debate)
@@ -97,6 +102,7 @@ def test_dynamic_debate_assigns_free_slot(client):
         SpeakerSlot(debate_id=debate.id, user_id=co.id, role='CO', room=1),
         SpeakerSlot(debate_id=debate.id, user_id=gov.id, role='Gov', room=2),
         SpeakerSlot(debate_id=debate.id, user_id=opp.id, role='Opp', room=2),
+        SpeakerSlot(debate_id=debate.id, user_id=existing_judge.id, role='Judge-Chair', room=1),
     ])
     db.session.commit()
 
@@ -104,9 +110,9 @@ def test_dynamic_debate_assigns_free_slot(client):
     resp = client.post(f'/debate/{debate.id}/join')
     data = resp.get_json()
     assert resp.status_code == 200
-    assert data['role'] == 'Free-1'
+    assert data['role'] == 'Judge-Wing'
     assert data['room'] == 2
 
     slot = SpeakerSlot.query.filter_by(debate_id=debate.id, user_id=joiner.id).first()
-    assert slot.role == 'Free-1'
+    assert slot.role == 'Judge-Wing'
     assert slot.room == 2
