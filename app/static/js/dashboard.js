@@ -236,6 +236,17 @@ document.addEventListener('DOMContentLoaded', () => {
       judgeBtn.style.display = 'none';
     }
   }
+
+  const preferCheck = document.getElementById('preferJudging');
+  if (preferCheck) {
+    preferCheck.addEventListener('change', () => {
+      fetch('/profile/prefer_judging', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prefer_judging: preferCheck.checked })
+      });
+    });
+  }
 });
 
 socket.on('vote_update', data => {

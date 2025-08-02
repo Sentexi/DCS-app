@@ -1,4 +1,4 @@
-from flask import render_template, request, redirect, url_for, flash
+from flask import render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_required, current_user
 from app.extensions import db
 from app.models import OpdResult, Debate, EloLog, SpeakerSlot, BpRank, User
@@ -112,6 +112,16 @@ def view():
         )
 
     return render_template('profile/view.html', opd_result_count=opd_result_count, recent_debates=recent_debates)
+
+
+@profile_bp.route('/profile/prefer_judging', methods=['POST'])
+@login_required
+def prefer_judging():
+    data = request.get_json() or {}
+    pref = bool(data.get('prefer_judging'))
+    current_user.prefer_judging = pref
+    db.session.commit()
+    return jsonify({'prefer_judging': current_user.prefer_judging})
 
 
 @profile_bp.route('/profile/debate/<int:debate_id>/results')
