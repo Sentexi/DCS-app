@@ -213,6 +213,46 @@ function populateGraphic() {
     });
 }
 
+function updateJoinLaterAvailability() {
+  const btn = document.getElementById('joinLaterBtn');
+  if (!btn) return;
+  if (!(window.currentDebateId && window.assignmentsComplete && !window.userHasSlot)) {
+    btn.style.display = 'none';
+    return;
+  }
+  fetch(`/debate/${window.currentDebateId}/assignments_json`)
+    .then(r => r.json())
+    .then(data => {
+      const roomStyles = data.room_styles || {};
+      const rooms = [...new Set(data.assignments.map(a => a.room))];
+      let freeAvailable = false;
+      let wingAvailable = false;
+      rooms.forEach(room => {
+        const style = roomStyles[room] || window.currentDebateStyle;
+        const slots = data.assignments.filter(a => a.room == room);
+        const wingCount = slots.filter(s => s.role === 'Judge-Wing').length;
+        const freeCount = slots.filter(s => s.role.startsWith('Free')).length;
+        const maxWings = 3;
+        const maxFree = style === 'OPD' ? 3 : 0;
+        if (wingCount < maxWings) wingAvailable = true;
+        if (freeCount < maxFree) freeAvailable = true;
+      });
+      const canWing = ['Wing', 'Chair'].includes(window.userJudgeSkill);
+      if (freeAvailable || (wingAvailable && canWing)) {
+        btn.disabled = false;
+        btn.classList.remove('disabled', 'btn-secondary');
+        btn.classList.add('btn-primary');
+        btn.style.display = 'inline-block';
+      } else {
+        btn.disabled = true;
+        btn.classList.add('disabled');
+        btn.classList.remove('btn-primary');
+        btn.classList.add('btn-secondary');
+        btn.style.display = 'inline-block';
+      }
+    });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   if (window.currentDebateId && (window.votingOpen === true || window.votingOpen === 'true')) {
     populateVoteBox();
@@ -246,6 +286,22 @@ document.addEventListener('DOMContentLoaded', () => {
         body: JSON.stringify({ prefer_judging: preferCheck.checked })
       });
     });
+  }
+
+  const joinBtn = document.getElementById('joinLaterBtn');
+  if (joinBtn) {
+    joinBtn.addEventListener('click', () => {
+      fetch(`/debate/${window.currentDebateId}/join`, { method: 'POST' })
+        .then(r => {
+          if (r.ok) {
+            joinBtn.style.display = 'none';
+          } else {
+            alert('Unable to join debate.');
+          }
+        })
+        .catch(() => alert('Unable to join debate.'));
+    });
+    updateJoinLaterAvailability();
   }
 });
 
@@ -294,6 +350,10 @@ socket.on('assignments_ready', data => {
     .then(r => r.json())
     .then(json => {
       updateCurrentDebate(json.current_debate);
+      if (typeof updateDebateLists === 'function') {
+        updateDebateLists(json);
+      }
+      updateJoinLaterAvailability();
     });
 });
 
@@ -441,6 +501,16 @@ function updateCurrentDebate(data) {
       }
     } else {
       judgeBtn.style.display = 'none';
+    }
+  }
+
+  const joinBtn = document.getElementById('joinLaterBtn');
+  if (joinBtn) {
+    if (window.currentDebateId && window.assignmentsComplete && !window.userHasSlot) {
+      joinBtn.style.display = 'inline-block';
+      updateJoinLaterAvailability();
+    } else {
+      joinBtn.style.display = 'none';
     }
   }
 }
