@@ -340,55 +340,71 @@ def debate_join(debate_id):
 
     rooms = sorted({s.room for s in debate.speakerslots}) or [1]
 
-    # First, compute judge counts for each room
-    judge_counts = []
-    for room in rooms:
-        count = SpeakerSlot.query.filter(
-            SpeakerSlot.debate_id == debate_id,
-            SpeakerSlot.room == room,
-            SpeakerSlot.role.like('Judge%'),
-        ).count()
-        judge_counts.append((count, room))
-
-    # Attempt to fill judge slots before speaker roles
-    if current_user.judge_skill in ('Wing', 'Chair'):
+    def assign_judge():
+        judge_counts = []
+        for room in rooms:
+            count = SpeakerSlot.query.filter(
+                SpeakerSlot.debate_id == debate_id,
+                SpeakerSlot.room == room,
+                SpeakerSlot.role.like('Judge%'),
+            ).count()
+            judge_counts.append((count, room))
         judge_counts.sort()
-        if judge_counts and judge_counts[0][0] < 2:
-            room = judge_counts[0][1]
-            slot = SpeakerSlot(
-                debate_id=debate_id,
-                user_id=current_user.id,
-                role='Judge-Wing',
-                room=room,
-            )
-            db.session.add(slot)
-            db.session.commit()
-            socketio.emit('assignments_ready', {'debate_id': debate_id})
-            return jsonify({'success': True, 'role': 'Judge-Wing', 'room': room})
-
-    # Only after all rooms have two judges, try assigning Free speaker roles
-    for room in rooms:
-        roles = {s.role for s in debate.speakerslots if s.room == room}
-        # Detect OPD rooms by the presence of Gov/Opp or any Free slot
-        is_opd_room = any(
-            r.startswith('Free') or r in {'Gov', 'Opp'}
-            for r in roles
-        )
-        if not is_opd_room:
-            continue
-        for idx in range(1, 4):
-            role = f'Free-{idx}'
-            if role not in roles:
+        for count, room in judge_counts:
+            if count < 3:
                 slot = SpeakerSlot(
                     debate_id=debate_id,
                     user_id=current_user.id,
-                    role=role,
+                    role='Judge-Wing',
                     room=room,
                 )
                 db.session.add(slot)
                 db.session.commit()
                 socketio.emit('assignments_ready', {'debate_id': debate_id})
-                return jsonify({'success': True, 'role': role, 'room': room})
+                return jsonify({'success': True, 'role': 'Judge-Wing', 'room': room})
+        return None
+
+    def assign_speaker():
+        for room in rooms:
+            roles = {s.role for s in debate.speakerslots if s.room == room}
+            # Detect OPD rooms by the presence of Gov/Opp or any Free slot
+            is_opd_room = any(
+                r.startswith('Free') or r in {'Gov', 'Opp'}
+                for r in roles
+            )
+            if not is_opd_room:
+                continue
+            for idx in range(1, 4):
+                role = f'Free-{idx}'
+                if role not in roles:
+                    slot = SpeakerSlot(
+                        debate_id=debate_id,
+                        user_id=current_user.id,
+                        role=role,
+                        room=room,
+                    )
+                    db.session.add(slot)
+                    db.session.commit()
+                    socketio.emit('assignments_ready', {'debate_id': debate_id})
+                    return jsonify({'success': True, 'role': role, 'room': room})
+        return None
+
+    # Prefer judging if the user has indicated so
+    if current_user.prefer_judging and current_user.judge_skill in ('Wing', 'Chair'):
+        result = assign_judge()
+        if result:
+            return result
+        result = assign_speaker()
+        if result:
+            return result
+    else:
+        result = assign_speaker()
+        if result:
+            return result
+        if current_user.judge_skill in ('Wing', 'Chair'):
+            result = assign_judge()
+            if result:
+                return result
 
     return jsonify({'success': False, 'message': 'No available slot or judging permission.'}), 400
 
