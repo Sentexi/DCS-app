@@ -94,6 +94,7 @@ def dashboard():
         is_judge_chair=is_judge_chair,
         second_voting_open=current_debate.second_voting_open if current_debate else False,
         winning_topic=winning_topic,
+        prefers_judging=current_user.prefer_judging,
     )
 
 
