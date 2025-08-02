@@ -5,7 +5,7 @@ import itertools
 from app.models import Debate, Topic, Vote, User
 from app.extensions import db
 from app.logic.assign import assign_speakers, _compute_room_counts
-from app.utils import compute_winning_topic
+from app.utils import compute_winning_topic, reset_prefer_judging
 from datetime import datetime, timedelta
 from app import socketio
 
@@ -60,6 +60,7 @@ def create_debate():
         debate = Debate(title=title, style=style,
                         assignment_mode=assignment_mode, active=False)
         db.session.add(debate)
+        reset_prefer_judging()
         db.session.commit()
         flash('Debate created!', 'success')
         return redirect(url_for('admin.admin_dashboard'))

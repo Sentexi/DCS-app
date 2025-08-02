@@ -60,6 +60,7 @@ class User(UserMixin, db.Model):
     languages = db.Column(db.String(64), nullable=True)            # comma separated list of languages
     debate_skill = db.Column(db.String(24), nullable=True)
     judge_skill = db.Column(db.String(16), nullable=True)
+    prefer_judging = db.Column(db.Boolean, default=False)
     debate_count = db.Column(db.Integer, default=0)
     last_seen = db.Column(db.DateTime, default=datetime.utcnow)
     elo_rating = db.Column(db.Integer, default=1000)
