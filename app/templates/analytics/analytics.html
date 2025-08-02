@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Analytics{% endblock %}
+
+{% block content %}
+<script>
+  window.histData = {{ hist_data | tojson }};
+  window.labels = {{ labels | tojson }};
+  window.datasets = {{ datasets | tojson }};
+</script>
+
+<h2 class="mb-4">Analytics</h2>
+
+<div class="mb-5">
+  <h4>Distribution of OPD Scores</h4>
+  <canvas id="histogramChart"></canvas>
+</div>
+
+<div>
+  <h4>Debate Quality by Median Score</h4>
+  <canvas id="medianChart"></canvas>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{{ url_for('static', filename='js/analytics.js') }}"></script>
+{% endblock %}

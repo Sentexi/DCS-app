@@ -37,12 +37,14 @@ def create_app(config_file=None):
     from .admin import admin_bp
     from .debate import debate_bp
     from .profile import profile_bp
+    from .analytics import analytics_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(main_bp)
     app.register_blueprint(admin_bp)
     app.register_blueprint(debate_bp)
     app.register_blueprint(profile_bp)
+    app.register_blueprint(analytics_bp)
     
     print(app.url_map)
     
