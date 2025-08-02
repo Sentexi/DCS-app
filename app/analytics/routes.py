@@ -3,7 +3,7 @@ from flask import render_template
 from flask_login import login_required
 
 from app.extensions import db
-from app.models import OpdResult, SpeakerSlot
+from app.models import OpdResult, SpeakerSlot, Score, User
 
 from . import analytics_bp
 
@@ -39,13 +39,25 @@ def analytics_dashboard():
         datasets.append(
             {
                 'label': f'Room {room}',
-                'data': [room_medians[room].get(deb_id) for deb_id in labels],
+                'data': [room_medians[room].get(debate_id) for debate_id in labels],
             }
         )
+
+    # Calculate average score per judge
+    judge_stats = (
+        db.session.query(User.first_name, User.last_name, db.func.avg(Score.value))
+        .join(Score, Score.judge_id == User.id)
+        .group_by(User.id)
+        .all()
+    )
+    judge_labels = [f"{fn} {ln}".strip() for fn, ln, _ in judge_stats]
+    judge_averages = [avg for _, _, avg in judge_stats]
 
     return render_template(
         'analytics/analytics.html',
         hist_data=scores,
         labels=labels,
         datasets=datasets,
+        judge_labels=judge_labels,
+        judge_averages=judge_averages,
     )
