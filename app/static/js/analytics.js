@@ -59,24 +59,4 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
   });
-
-  const judgeCtx = document.getElementById('judgeAverages').getContext('2d');
-  new Chart(judgeCtx, {
-    type: 'bar',
-    data: {
-      labels: window.judgeLabels || [],
-      datasets: [{
-        label: 'Average Score',
-        data: window.judgeAverages || [],
-        backgroundColor: 'rgba(153, 102, 255, 0.5)',
-        borderColor: 'rgba(153, 102, 255, 1)',
-        borderWidth: 1
-      }]
-    },
-    options: {
-      scales: {
-        y: { beginAtZero: true }
-      }
-    }
-  });
 });
