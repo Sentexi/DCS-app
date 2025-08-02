@@ -71,3 +71,9 @@ def compute_winning_topic(debate):
     if len(winners) == 1:
         return Topic.query.get(winners[0])
     return None
+
+
+def reset_prefer_judging():
+    """Reset the prefer_judging flag for all users."""
+    from .models import User
+    User.query.update({User.prefer_judging: False}, synchronize_session=False)
