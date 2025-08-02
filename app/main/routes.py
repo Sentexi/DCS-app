@@ -11,6 +11,12 @@ from app.utils import compute_winning_topic
 
 from . import main_bp
 
+
+@main_bp.route('/privacy')
+def privacy():
+    """Public privacy policy page."""
+    return render_template('main/privacy.html')
+
 @main_bp.route('/')
 @login_required
 def dashboard():
