@@ -2,13 +2,11 @@
 {% block title %}Analytics{% endblock %}
 
 {% block content %}
-  <script>
-    window.histData = {{ hist_data | tojson }};
-    window.labels = {{ labels | tojson }};
-    window.datasets = {{ datasets | tojson }};
-    window.judgeLabels = {{ judge_labels | tojson }};
-    window.judgeAverages = {{ judge_averages | tojson }};
-  </script>
+<script>
+  window.histData = {{ hist_data | tojson }};
+  window.labels = {{ labels | tojson }};
+  window.datasets = {{ datasets | tojson }};
+</script>
 
 <h2 class="mb-4">Analytics</h2>
 
@@ -17,16 +15,11 @@
   <canvas id="histogramChart"></canvas>
 </div>
 
-  <div>
-    <h4>Debate Quality by Median Score</h4>
-    <canvas id="medianChart"></canvas>
-  </div>
-
-  <div class="mt-5">
-    <h4>Average Score by Judge</h4>
-    <canvas id="judgeAverages"></canvas>
-  </div>
-  {% endblock %}
+<div>
+  <h4>Debate Quality by Median Score</h4>
+  <canvas id="medianChart"></canvas>
+</div>
+{% endblock %}
 
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
