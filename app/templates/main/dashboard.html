@@ -37,8 +37,8 @@
         <div class="row mt-2">
           <div class="muted">{{ votes_cast or 0 }}/{{ votes_total or 0 }} votes cast</div>
           {% set room_count = current_debate.speakerslots | map(attribute='room') | unique | list | length %}
-          {% set speaker_count = current_debate.speakerslots | rejectattr('role', 'match', '^Judge') | list | length %}
-          {% set judge_count = current_debate.speakerslots | selectattr('role', 'match', '^Judge') | list | length %}
+          {% set speaker_count = current_debate.speakerslots | rejectattr('role', 'startswith', 'Judge') | list | length %}
+          {% set judge_count = current_debate.speakerslots | selectattr('role', 'startswith', 'Judge') | list | length %}
           <div class="right row">
             <span class="badge badge-blue">{{ room_count }} rooms</span>
             <span class="badge badge-blue">{{ speaker_count }} speakers</span>
