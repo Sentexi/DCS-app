@@ -10,14 +10,20 @@
 
 <h2 class="mb-4">Analytics</h2>
 
-<div class="mb-5">
-  <h4>Distribution of OPD Scores</h4>
-  <canvas id="histogramChart"></canvas>
+<div class="card mb-4">
+  <div class="card-header">Distribution of OPD Scores</div>
+  <div class="card-body">
+    <canvas id="histogramChart"></canvas>
+    <div class="bar-stub" aria-hidden="true"></div>
+  </div>
 </div>
 
-<div>
-  <h4>Debate Quality by Median Score</h4>
-  <canvas id="medianChart"></canvas>
+<div class="card">
+  <div class="card-header">Debate Quality by Median Score</div>
+  <div class="card-body">
+    <canvas id="medianChart"></canvas>
+    <svg class="line-stub" aria-hidden="true" viewBox="0 0 100 20"><line x1="0" y1="10" x2="100" y2="10" stroke="var(--gray-300)" stroke-width="2" stroke-dasharray="4 4"/></svg>
+  </div>
 </div>
 {% endblock %}
 
