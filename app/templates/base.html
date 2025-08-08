@@ -14,36 +14,26 @@
 </head>
 <body>
 <a href="#maincontent" class="skip-link">Skip to content</a>
-<nav class="navbar navbar-expand-lg">
-  <div class="container">
-    <a class="navbar-brand" href="{{ url_for('main.dashboard') }}">DebateHub</a>
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-      <span class="navbar-toggler-icon"></span>
-    </button>
-    <div class="collapse navbar-collapse" id="navbarNav">
-      <ul class="navbar-nav ms-auto">
-        <li class="nav-item">
-          <a class="nav-link" href="{{ url_for('profile.view') }}">Profile</a>
-        </li>
-        {% if current_user.is_authenticated and current_user.is_admin %}
-        <li class="nav-item">
-          <a class="nav-link" href="{{ url_for('admin.admin_dashboard') }}">Admin</a>
-        </li>
-        {% endif %}
-        {% if current_user.is_authenticated %}
-        <li class="nav-item">
-          <a class="nav-link" href="{{ url_for('analytics.analytics_dashboard') }}">Analytics</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="{{ url_for('auth.logout') }}">Logout</a>
-        </li>
-        {% endif %}
-      </ul>
+<nav class="navbar">
+  <div class="nav-inner">
+    <a class="brand" href="{{ url_for('main.dashboard') }}">
+      <span class="logo"></span>
+      DebateHub
+    </a>
+    <div class="nav-links">
+      <a class="nav-link {{ 'active' if request.endpoint == 'main.dashboard' else '' }}" href="{{ url_for('main.dashboard') }}">Dashboard</a>
+      <a class="nav-link {{ 'active' if request.endpoint.startswith('main.debate') else '' }}" href="{{ url_for('main.dashboard') }}">Debates</a>
+      <a class="nav-link {{ 'active' if request.endpoint.startswith('analytics.') else '' }}" href="{{ url_for('analytics.analytics_dashboard') }}">Analytics</a>
+      <a class="nav-link {{ 'active' if request.endpoint.startswith('profile.') else '' }}" href="{{ url_for('profile.view') }}">Profile</a>
+      {% if current_user.is_authenticated and current_user.is_admin %}
+      <a class="nav-link {{ 'active' if request.endpoint.startswith('admin.') else '' }}" href="{{ url_for('admin.admin_dashboard') }}">Admin</a>
+      {% endif %}
+      <a class="nav-link nav-cta" href="{{ url_for('admin.create_debate') }}">Start a Debate</a>
     </div>
   </div>
 </nav>
 
-<main id="maincontent" class="container my-5">
+<main id="maincontent" class="container">
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
         {% for category, message in messages %}

@@ -1,133 +1,182 @@
 {% extends "base.html" %}
 {% block title %}Dashboard{% endblock %}
 
-{% block extra_head %}
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/graphic.css') }}">
-{% endblock %}
-
 {% block content %}
-<script>
-  window.currentDebateId = {{ current_debate.id if current_debate else 'null' }};
-  window.votingOpen = {{ 'true' if current_debate and current_debate.voting_open else 'false' }};
-  window.secondVotingOpen = {{ 'true' if current_debate and second_voting_open else 'false' }};
-  window.assignmentsComplete = {{ 'true' if current_debate and current_debate.assignment_complete else 'false' }};
-  window.currentDebateStyle = "{{ current_debate.style if current_debate else '' }}";
-  window.currentUserId = {{ current_user.id }};
-  window.userHasSlot = {{ 'true' if user_role else 'false' }};
-  window.userIsJudgeChair = {{ 'true' if is_judge_chair else 'false' }};
-  window.userJudgeSkill = "{{ current_user.judge_skill or '' }}";
-  window.preferJudging = {{ 'true' if prefers_judging else 'false' }};
-</script>
+<nav class="breadcrumb">
+  <a href="{{ url_for('main.dashboard') }}">Home</a> / Dashboard
+</nav>
 
-<div class="mb-4 text-center">
-  <h2>Welcome, {{ current_user.first_name }} {{ current_user.last_name }}!</h2>
-</div>
-
-<div class="grid mb-4">
-  <div class="card text-center">
-    <div class="card-body">
-      <div class="text-muted small">Active</div>
-      <div class="fs-4">{{ active_debates|length }}</div>
-    </div>
-  </div>
-  <div class="card text-center">
-    <div class="card-body">
-      <div class="text-muted small">Upcoming</div>
-      <div class="fs-4">{{ upcoming_debates|length }}</div>
-    </div>
-  </div>
-  <div class="card text-center">
-    <div class="card-body">
-      <div class="text-muted small">Past</div>
-      <div class="fs-4">{{ past_debates|length }}</div>
-    </div>
+<div class="page-header">
+  <h1 class="page-title">Welcome back, {{ current_user.first_name }}!</h1>
+  <div class="row">
+    <button class="btn btn-outline">Theme</button>
+    <button class="btn btn-secondary">Prefer Judging</button>
   </div>
 </div>
 
-<div class="card current-debate mb-4">
-  <div class="card-header d-flex justify-content-between align-items-center">
-    <span>{{ current_debate.title or 'No debate right now' }}</span>
-    {% if current_debate.style %}
-      <span class="badge badge-blue">{{ current_debate.style }}</span>
-    {% endif %}
+<div class="grid">
+  <div class="col-8 col-lg-12">
+    <div class="card elevated">
+      <div class="card-header">
+        <span>Current Debate</span>
+        {% if current_debate %}
+        <span class="badge badge-blue">{{ current_debate.style }}</span>
+        {% endif %}
+      </div>
+      <div class="card-body">
+        {% if current_debate %}
+        <h3>{{ current_debate.title }}</h3>
+        <div class="muted mb-2">{{ user_role or 'Role pending' }}</div>
+        <div class="right row mb-3">
+          <a href="{{ url_for('debate.judging', debate_id=current_debate.id) }}" class="btn btn-primary">Join Room</a>
+          <a href="{{ url_for('main.debate_view', debate_id=current_debate.id) }}" class="btn btn-secondary">View Draw</a>
+        </div>
+        <div class="progress">
+          <div class="progress-bar" style="width: {{ vote_percent or 64 }}%;"></div>
+        </div>
+        <div class="row mt-2">
+          <div class="muted">{{ votes_cast or 0 }}/{{ votes_total or 0 }} votes cast</div>
+          {% set room_count = current_debate.speakerslots | map(attribute='room') | unique | list | length %}
+          {% set speaker_count = current_debate.speakerslots | rejectattr('role', 'match', '^Judge') | list | length %}
+          {% set judge_count = current_debate.speakerslots | selectattr('role', 'match', '^Judge') | list | length %}
+          <div class="right row">
+            <span class="badge badge-blue">{{ room_count }} rooms</span>
+            <span class="badge badge-blue">{{ speaker_count }} speakers</span>
+            <span class="badge badge-blue">{{ judge_count }} judges</span>
+          </div>
+        </div>
+        {% else %}
+        <p class="muted">No debate right now.</p>
+        {% endif %}
+      </div>
+      <div class="card-footer">
+        <span>#debate #clubnight</span>
+        <a href="{{ url_for('profile.view') }}" class="btn btn-outline right">Change Preference</a>
+      </div>
+    </div>
+  </div>
+  <div class="col-4 col-lg-12">
+    <div class="card">
+      <div class="card-header">Your Quick Stats</div>
+      <div class="card-body">
+        <div class="grid">
+          <div class="col-4"><div class="card center"><div class="card-body"><div class="muted">Rank</div><div>{{ current_user.elo_rating }}</div></div></div></div>
+          <div class="col-4"><div class="card center"><div class="card-body"><div class="muted">Avg. Speaker</div><div>{{ current_user.opd_skill or 0 }}</div></div></div></div>
+          <div class="col-4"><div class="card center"><div class="card-body"><div class="muted">Judged</div><div>{{ current_user.debate_count or 0 }}</div></div></div></div>
+        </div>
+        <div class="row mt-3">
+          <label class="switch">
+            <input type="checkbox" id="preferJudging" {% if prefers_judging %}checked{% endif %}>
+            <span class="track"><span class="thumb"></span></span>
+          </label>
+          <span class="muted">Prefer judging tonight</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card mt-4">
+  <div class="card-header">
+    <div class="tabs">
+      <button class="tab active" data-panel="active">Active</button>
+      <button class="tab" data-panel="upcoming">Upcoming</button>
+      <button class="tab" data-panel="past">Past</button>
+    </div>
+    <div class="row right">
+      <select class="select">
+        <option>All Rooms</option>
+      </select>
+      <button class="btn btn-secondary">Filter</button>
+    </div>
   </div>
   <div class="card-body">
-    <div id="voteProgress" class="progress my-2" style="{% if not current_debate %}display:none;{% endif %}">
-      <div class="progress-bar" style="width: {{ vote_percent or 0 }}%;" aria-valuenow="{{ vote_percent or 0 }}" aria-valuemin="0" aria-valuemax="100">{{ votes_cast or 0 }}/{{ votes_total or 0 }}</div>
+    <div class="panel active" data-panel="active">
+      <div class="grid">
+        {% for d in active_debates %}
+        <div class="col-6 col-lg-12">
+          <div class="card">
+            <div class="card-body">
+              <span class="badge badge-blue">{{ d.style }}</span>
+              <h3>{{ d.title }}</h3>
+              <div class="right row">
+                <a href="{{ url_for('main.debate_view', debate_id=d.id) }}" class="btn btn-primary">Open</a>
+                <a href="{{ url_for('main.debate_view', debate_id=d.id) }}" class="btn btn-outline">Details</a>
+              </div>
+            </div>
+          </div>
+        </div>
+        {% else %}
+        <p class="muted">No active debates.</p>
+        {% endfor %}
+      </div>
     </div>
-    <div id="voteInfo" class="d-flex justify-content-between align-items-center mb-2"{% if not current_debate %} style="display:none"{% endif %}>
-      <small class="text-muted">{{ votes_cast or 0 }}/{{ votes_total or 0 }} have voted</small>
-      <small class="text-muted">{{ vote_percent or 0 }}%</small>
+    <div class="panel" data-panel="upcoming">
+      {% for d in upcoming_debates %}
+      <div class="card">
+        <div class="card-body">
+          <h3>{{ d.title }}</h3>
+          <p class="muted">{{ d.style }}</p>
+          <a href="{{ url_for('main.debate_view', debate_id=d.id) }}" class="btn btn-primary">Sign Up</a>
+        </div>
+      </div>
+      {% else %}
+      <p class="muted">No upcoming debates.</p>
+      {% endfor %}
     </div>
-    <p id="winningFactsheet" class="mt-2 small text-muted factsheet-content"{% if not winning_topic or not winning_topic.factsheet %} style="display:none"{% endif %}>{% if winning_topic and winning_topic.factsheet %}{{ winning_topic.factsheet }}{% endif %}</p>
-    <p id="winningTopic" class="mt-2 fw-bold text-success"{% if not winning_topic %} style="display:none"{% endif %}>{% if winning_topic %}Winning topic: {{ winning_topic.text }}{% endif %}</p>
-    <p id="userRoleText" class="mt-2 fw-bold text-primary"{% if not user_role %} style="display:none"{% endif %}>You are {{ user_role }}</p>
-    <div class="mt-3">
-      <div id="voteBoxContainer" class="card p-3 vote-box"{% if not current_debate or not current_debate.voting_open %} style="display:none"{% endif %}></div>
-      <div id="graphicContainer" class="mt-3"{% if not current_debate or not current_debate.assignment_complete or not user_role %} style="display:none"{% endif %}></div>
+    <div class="panel" data-panel="past">
+      <div class="card">
+        <div class="card-body">
+          <h3>Recent Results</h3>
+          <div class="rooms">
+            <div class="room">
+              <div class="role gov"><span>Gov</span><span class="tag">Win</span></div>
+              <div class="role opp"><span>Opp</span><span class="tag">Loss</span></div>
+            </div>
+            <div class="room">
+              <div class="role gov"><span>Gov</span><span class="tag">Loss</span></div>
+              <div class="role opp"><span>Opp</span><span class="tag">Win</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
-    {% if current_debate and current_debate.assignment_complete and not user_role %}
-    <button id="joinLaterBtn" class="btn btn-secondary mt-3" disabled>Join Debate</button>
-    {% endif %}
-    <div class="form-check mt-3">
-      <input class="form-check-input" type="checkbox" id="preferJudging" {% if prefers_judging %}checked{% endif %}>
-      <label class="form-check-label" for="preferJudging">Prefer judging</label>
-    </div>
-    <a id="judgingButton" class="btn btn-warning mt-3{% if current_debate and not current_debate.active %} disabled{% endif %}" {% if current_debate and current_debate.active %}href="{{ url_for('debate.judging', debate_id=current_debate.id) }}"{% endif %} {% if not current_debate or not current_debate.assignment_complete or not is_judge_chair %}style="display:none"{% elif current_debate and not current_debate.active %} aria-disabled="true"{% endif %}>Judging</a>
-    <p id="noDebateMessage" class="text-muted"{% if current_debate %} style="display:none"{% endif %}>No active debate at the moment.</p>
   </div>
 </div>
 
-<div class="tabs justify-content-center mb-3" id="debateTabs" role="tablist">
-  <button class="tab active" id="active-tab" data-bs-toggle="pill" data-bs-target="#active" type="button" role="tab">Active</button>
-  <button class="tab" id="past-tab" data-bs-toggle="pill" data-bs-target="#past" type="button" role="tab">Past</button>
-  <button class="tab" id="upcoming-tab" data-bs-toggle="pill" data-bs-target="#upcoming" type="button" role="tab">Upcoming</button>
+<div class="page-header mt-5">
+  <h2 class="page-title">User Management</h2>
+  <div class="row">
+    <input class="input" type="text" placeholder="Search">
+    <button class="btn btn-secondary">Export CSV</button>
+    <button class="btn btn-primary">Add User</button>
+  </div>
 </div>
-
-<div class="tab-content">
-  <div class="tab-pane fade show active" id="active" role="tabpanel">
-    {% for d in active_debates %}
-      <div class="card debate-card mb-3">
-        <div class="card-body">
-          <h6 class="card-title">{{ d.title }}</h6>
-          <span class="badge badge-blue">{{ d.style }}</span>
-          <a href="{{ url_for('main.debate_view', debate_id=d.id) }}" class="stretched-link"></a>
-        </div>
-      </div>
-    {% else %}
-      <div class="text-center text-muted my-4">No other active debates.</div>
-    {% endfor %}
-  </div>
-  <div class="tab-pane fade" id="past" role="tabpanel">
-    {% for d in past_debates %}
-      <div class="card debate-card mb-3">
-        <div class="card-body">
-          <h6 class="card-title">{{ d.title }}</h6>
-          <span class="badge badge-gray">{{ d.style }}</span>
-          <a href="{{ url_for('main.debate_view', debate_id=d.id) }}" class="stretched-link"></a>
-        </div>
-      </div>
-    {% else %}
-      <div class="text-center text-muted my-4">No past debates.</div>
-    {% endfor %}
-  </div>
-  <div class="tab-pane fade" id="upcoming" role="tabpanel">
-    {% for d in upcoming_debates %}
-      <div class="card debate-card mb-3">
-        <div class="card-body">
-          <h6 class="card-title">{{ d.title }}</h6>
-          <span class="badge badge-amber">{{ d.style }}</span>
-          <a href="{{ url_for('main.debate_view', debate_id=d.id) }}" class="stretched-link"></a>
-        </div>
-      </div>
-    {% else %}
-      <div class="text-center text-muted my-4">No upcoming debates.</div>
-    {% endfor %}
-  </div>
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr><th>Name</th><th>Email</th><th class="right">Actions</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Jane Doe</td><td>jane@example.com</td><td class="actions"><button class="btn btn-secondary btn-sm">Edit</button> <button class="btn btn-warning btn-sm">Make Admin</button></td></tr>
+      <tr><td>John Smith</td><td>john@example.com</td><td class="actions"><button class="btn btn-secondary btn-sm">Edit</button> <button class="btn btn-warning btn-sm">Make Admin</button></td></tr>
+    </tbody>
+  </table>
 </div>
 {% endblock %}
 
 {% block extra_js %}
-<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+<script>
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    const panel = tab.dataset.panel;
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    document.querySelectorAll('.panel').forEach(p => {
+      p.classList.toggle('active', p.dataset.panel === panel);
+      p.style.display = p.dataset.panel === panel ? 'block' : 'none';
+    });
+  });
+});
+</script>
 {% endblock %}
