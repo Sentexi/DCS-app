@@ -1,32 +1,40 @@
 {% extends "base.html" %}
 {% block title %}Profile{% endblock %}
 {% block content %}
-<h2>Profile</h2>
-<form method="post" class="mb-3">
-  <div class="mb-3">
-    <label class="form-label">First Name</label>
-    <input name="first_name" class="form-control" value="{{ current_user.first_name }}">
+<div class="card profile-card mb-4">
+  <div class="card-header">Profile</div>
+  <div class="card-body">
+    <form method="post" class="grid">
+      <div class="field col-span-6">
+        <label class="label">First Name</label>
+        <input name="first_name" class="input" value="{{ current_user.first_name }}">
+      </div>
+      <div class="field col-span-6">
+        <label class="label">Last Name</label>
+        <input name="last_name" class="input" value="{{ current_user.last_name }}">
+      </div>
+      <div class="field col-span-6">
+        <label class="label">Email</label>
+        <input name="email" class="input" value="{{ current_user.email }}">
+      </div>
+      <div class="field col-span-6">
+        <label class="label">Languages</label>
+        <input name="languages" class="input" value="{{ current_user.languages }}">
+      </div>
+      <div class="col-span-12">
+        <button type="submit" class="btn btn-primary">Update</button>
+      </div>
+    </form>
   </div>
-  <div class="mb-3">
-    <label class="form-label">Last Name</label>
-    <input name="last_name" class="form-control" value="{{ current_user.last_name }}">
-  </div>
-  <div class="mb-3">
-    <label class="form-label">Email</label>
-    <input name="email" class="form-control" value="{{ current_user.email }}">
-  </div>
-  <div class="mb-3">
-    <label class="form-label">Languages</label>
-    <input name="languages" class="form-control" value="{{ current_user.languages }}">
-  </div>
-  <button type="submit" class="btn btn-primary">Update</button>
-</form>
-<hr>
-<!-- <p><strong>Debate Skill:</strong> {{ current_user.debate_skill or '—' }}</p> -->
-<!-- <p><strong>Judge Skill:</strong> {{ current_user.judge_skill or '—' }}</p> -->
+</div>
+
+<div class="mb-3">
+  <span class="badge badge-blue">Debates {{ current_user.debate_count or 0 }}</span>
+  <span class="badge badge-gray">BP {{ '%.0f'|format(current_user.elo_rating) }}</span>
+  <span class="badge badge-amber">σ {{ '%.0f'|format(current_user.elo_sigma) }}</span>
+</div>
+
 <p><strong>Languages:</strong> {{ current_user.languages or '—' }}</p>
-<p><strong>Debates Participated:</strong> {{ current_user.debate_count or 0 }}</p>
-<p><strong>BP Ranking:</strong> {{ '%.0f'|format(current_user.elo_rating) }} &plusmn; {{ '%.0f'|format(current_user.elo_sigma) }}</p>
 <p><strong>OPD Skill:</strong>
   {% if opd_result_count == 0 %}
     None
