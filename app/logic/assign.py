@@ -161,6 +161,45 @@ def _allocate_by_mode(users: List[User], counts: List[int], settings: List[Tuple
         pool = pool[cnt:]
     return rooms, unsafe, ""
 
+
+def _balance_preferred_across_rooms(rooms: List[List[User]], counts: List[int]) -> List[List[User]]:
+    """Distribute users who prefer judging evenly across rooms.
+
+    Swaps users between rooms to ensure the number of preferred judges per room
+    is as balanced as possible while keeping room sizes intact.
+    """
+    num_rooms = len(rooms)
+    pref_counts = [sum(1 for u in r if getattr(u, "prefer_judging", False)) for r in rooms]
+    total_pref = sum(pref_counts)
+
+    remaining_pref = total_pref
+    remaining_rooms = num_rooms
+    desired = [0] * num_rooms
+    for i in range(num_rooms):
+        if remaining_pref <= 0:
+            break
+        max_for_room = min(counts[i], math.ceil(remaining_pref / remaining_rooms))
+        desired[i] = max_for_room
+        remaining_pref -= max_for_room
+        remaining_rooms -= 1
+
+    while True:
+        over = next((i for i in range(num_rooms) if pref_counts[i] > desired[i]), None)
+        under = next((i for i in range(num_rooms) if pref_counts[i] < desired[i]), None)
+        if over is None or under is None:
+            break
+        pref_user = next(u for u in rooms[over] if getattr(u, "prefer_judging", False))
+        swap_user = next((u for u in rooms[under] if not getattr(u, "prefer_judging", False)), None)
+        if swap_user is None:
+            break
+        rooms[over].remove(pref_user)
+        rooms[under].append(pref_user)
+        pref_counts[over] -= 1
+        pref_counts[under] += 1
+        rooms[under].remove(swap_user)
+        rooms[over].append(swap_user)
+    return rooms
+
 def assign_speakers(debate, users, max_rooms=2, scenario=None):
     """
     Dispatch to OPD or BP, splitting into at most max_rooms rooms,
@@ -282,6 +321,8 @@ def assign_opd_single_room(debate, users, room=1, mode="Random"):
         # Split into preferred judges and others
         preferred = [u for u in pool if getattr(u, "prefer_judging", False)]
         others = [u for u in pool if u not in preferred]
+        random.shuffle(preferred)
+        random.shuffle(others)
 
         # ---------- helper lambdas ---------------------------------------------
         is_chair = lambda u: getattr(u, "judge_skill", "") == "Chair"
@@ -309,6 +350,12 @@ def assign_opd_single_room(debate, users, room=1, mode="Random"):
             preferred.remove(chair_user)
         else:
             others.remove(chair_user)
+
+        # Ensure enough speakers remain by moving some preferred judges if needed
+        if len(others) < 6:
+            shortfall = 6 - len(others)
+            others.extend(preferred[:shortfall])
+            preferred = preferred[shortfall:]
 
         # ---------- 2. SIX MAIN SPEAKERS ---------------------------------------
         if len(others) < 6:
@@ -462,6 +509,8 @@ def assign_bp_single_room(debate, users, room=1, mode="Random"):
     # Split into preferred judges and others
     preferred = [u for u in pool if getattr(u, "prefer_judging", False)]
     others = [u for u in pool if u not in preferred]
+    random.shuffle(preferred)
+    random.shuffle(others)
 
     is_chair = lambda u: getattr(u, "judge_skill", "") == "Chair"
     is_wing  = lambda u: getattr(u, "judge_skill", "") == "Wing"
@@ -488,8 +537,16 @@ def assign_bp_single_room(debate, users, room=1, mode="Random"):
     else:
         others.remove(chair_user)
 
+    # Ensure enough potential speakers remain
+    if len(others) < 8:
+        shortfall = 8 - len(others)
+        others.extend(preferred[:shortfall])
+        preferred = preferred[shortfall:]
+
     # --- 2. Assign 8 speakers ---
     speakers = []
+    if len(others) < 8:
+        return False, "Not enough eligible debaters for BP."
     if mode == "ProAm":
         ranked = sorted(others, key=lambda u: _skill_for(u, "BP"), reverse=True)
         while len(speakers) < 8 and ranked:
@@ -573,6 +630,8 @@ def assign_dynamic(debate, users, scenario=None):
     rooms, unsafe, msg = _allocate_by_mode(users, counts, settings, debate.assignment_mode)
     if msg:
         return False, msg
+
+    rooms = _balance_preferred_across_rooms(rooms, counts)
 
     messages = []
     success = True
