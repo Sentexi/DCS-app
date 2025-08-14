@@ -6,6 +6,9 @@ from app.models import SpeakerSlot, User, Debate
 from app.extensions import db
 from collections import Counter
 
+# Logic here balances judge preferences across rooms and preserves
+# required speaker counts for OPD and BP assignments.
+
 # ---------------------------------------------------------------------------
 # Helper functions
 # ---------------------------------------------------------------------------
@@ -42,6 +45,59 @@ def _overall_skill(user: User) -> float:
     bp = _skill_for(user, "BP")
     opd = _skill_for(user, "OPD")
     return (bp / 20.0) + opd  # simple combination keeping order stable
+
+
+def _prefers_judging(user: User) -> bool:
+    """Return True if a user indicated a preference to judge."""
+
+    return getattr(user, "judge_choice", "no") != "no"
+
+
+def _balance_judge_preferences(rooms: List[List[User]]) -> None:
+    """Spread judge-preferring users evenly across rooms."""
+
+    total_pref = sum(1 for room in rooms for u in room if _prefers_judging(u))
+    if len(rooms) < 2 or total_pref == 0:
+        return
+
+    target_base = total_pref // len(rooms)
+    extra = total_pref % len(rooms)
+    targets = [target_base + (1 if i < extra else 0) for i in range(len(rooms))]
+
+    pref_counts = [sum(1 for u in room if _prefers_judging(u)) for room in rooms]
+
+    def room_chair_count(room):
+        return sum(1 for u in room if getattr(u, "judge_skill", "") == "Chair")
+
+    while True:
+        over_idx = next((i for i, c in enumerate(pref_counts) if c > targets[i]), None)
+        under_idx = next((i for i, c in enumerate(pref_counts) if c < targets[i]), None)
+        if over_idx is None or under_idx is None:
+            break
+
+        # candidate from overfull room that doesn't leave room without chair
+        source_candidates = [
+            u for u in rooms[over_idx]
+            if _prefers_judging(u)
+            and not (
+                getattr(u, "judge_skill", "") == "Chair"
+                and room_chair_count(rooms[over_idx]) <= 1
+            )
+        ]
+        if not source_candidates:
+            break
+        mover = source_candidates[0]
+
+        swap = next((u for u in rooms[under_idx] if not _prefers_judging(u)), None)
+        if swap is None:
+            break
+
+        rooms[over_idx].remove(mover)
+        rooms[under_idx].append(mover)
+        rooms[under_idx].remove(swap)
+        rooms[over_idx].append(swap)
+        pref_counts[over_idx] -= 1
+        pref_counts[under_idx] += 1
 
 
 def _compute_room_counts(total, settings):
@@ -85,6 +141,7 @@ def _allocate_by_mode(users: List[User], counts: List[int], settings: List[Tuple
         for idx, cnt in enumerate(counts):
             rooms[idx] = pool[:cnt]
             pool = pool[cnt:]
+        _balance_judge_preferences(rooms)
         return rooms, unsafe, ""
 
     if mode == "Random":
@@ -101,6 +158,7 @@ def _allocate_by_mode(users: List[User], counts: List[int], settings: List[Tuple
             need = cnt - 1
             rooms[idx].extend(pool[:need])
             pool = pool[need:]
+        _balance_judge_preferences(rooms)
         return rooms, unsafe, ""
 
     # determine skill metric
@@ -128,6 +186,7 @@ def _allocate_by_mode(users: List[User], counts: List[int], settings: List[Tuple
                     room[0], _ = chair, room[0]
                 else:
                     unsafe = True
+        _balance_judge_preferences(rooms)
         return rooms, unsafe, ""
 
     if mode == "ProAm":
@@ -151,12 +210,14 @@ def _allocate_by_mode(users: List[User], counts: List[int], settings: List[Tuple
                     room[0], _ = chair, room[0]
                 else:
                     unsafe = True
+        _balance_judge_preferences(rooms)
         return rooms, unsafe, ""
 
     random.shuffle(pool)
     for idx, cnt in enumerate(counts):
         rooms[idx] = pool[:cnt]
         pool = pool[cnt:]
+    _balance_judge_preferences(rooms)
     return rooms, unsafe, ""
 
 def assign_speakers(debate, users, max_rooms=2, scenario=None):
@@ -282,12 +343,21 @@ def assign_opd_single_room(debate, users, room=1, mode="Random"):
         is_wing  = lambda u: getattr(u, "judge_skill", "") == "Wing"
         is_first = lambda u: getattr(u, "debate_skill", "") == "First Timer"
 
+        preferred = [u for u in pool if _prefers_judging(u)]
+        others = [u for u in pool if u not in preferred]
+
         # ---------- 1. CHAIR ----------------------------------------------------
-        chair_user = next((u for u in pool if is_chair(u)), None)
+        chair_user = next((u for u in preferred if is_chair(u)), None)
         if not chair_user:
-            chair_user = next((u for u in pool if is_wing(u) and not is_first(u)), None)
+            chair_user = next((u for u in others if is_chair(u)), None)
         if not chair_user:
-            chair_user = next((u for u in pool if not is_first(u)), None)
+            chair_user = next((u for u in preferred if is_wing(u) and not is_first(u)), None)
+        if not chair_user:
+            chair_user = next((u for u in others if is_wing(u) and not is_first(u)), None)
+        if not chair_user:
+            chair_user = next((u for u in preferred if not is_first(u)), None)
+        if not chair_user:
+            chair_user = next((u for u in others if not is_first(u)), None)
         if not chair_user:
             return False, "No eligible Chair judge."
 
@@ -295,53 +365,90 @@ def assign_opd_single_room(debate, users, room=1, mode="Random"):
             SpeakerSlot(debate_id=debate.id, user_id=chair_user.id,
                         role="Judge-Chair", room=room)
         ]
-        pool.remove(chair_user)
+        if chair_user in preferred:
+            preferred.remove(chair_user)
+        else:
+            others.remove(chair_user)
+
+        pool = preferred + others
 
         # ---------- 2. SIX MAIN SPEAKERS ---------------------------------------
         if len(pool) < 6:
             return False, "Not enough remaining for 6 main speakers."
 
+        main_speakers = []
         if mode == "ProAm":
             ranked = sorted(pool, key=lambda u: _skill_for(u, "OPD"), reverse=True)
-            main_speakers = []
             while len(main_speakers) < 6 and ranked:
                 if ranked:
-                    main_speakers.append(ranked.pop(0))
+                    cand = ranked.pop(0)
+                    if cand in others:
+                        others.remove(cand)
+                    else:
+                        preferred.remove(cand)
+                    main_speakers.append(cand)
                 if ranked and len(main_speakers) < 6:
-                    main_speakers.append(ranked.pop())
+                    cand = ranked.pop()
+                    if cand in others:
+                        others.remove(cand)
+                    else:
+                        preferred.remove(cand)
+                    main_speakers.append(cand)
         else:
-            main_speakers = pool[:6]
+            take = min(6, len(others))
+            main_speakers.extend(others[:take])
+            others = others[take:]
+            if len(main_speakers) < 6:
+                need = 6 - len(main_speakers)
+                main_speakers.extend(preferred[:need])
+                preferred = preferred[need:]
+
+        if len(main_speakers) < 6:
+            return False, "Not enough remaining for 6 main speakers."
+
         for u, side in zip(main_speakers, roles):
             assignments.append(
                 SpeakerSlot(debate_id=debate.id, user_id=u.id,
                             role=side, room=room)
             )
-        for u in main_speakers:
-            if u in pool:
-                pool.remove(u)
 
         # ---------- 3. FIRST WING ----------------------------------------------
-        wing_user = next((u for u in pool if is_wing(u)), None)
+        pool = preferred + others
+        wing_user = next((u for u in preferred if is_wing(u)), None)
         if not wing_user:
-            wing_user = next((u for u in pool if not is_first(u)), None)
+            wing_user = next((u for u in preferred if not is_first(u)), None)
+        if not wing_user:
+            wing_user = next((u for u in others if is_wing(u)), None)
+        if not wing_user:
+            wing_user = next((u for u in others if not is_first(u)), None)
 
         if wing_user:
             assignments.append(
                 SpeakerSlot(debate_id=debate.id, user_id=wing_user.id,
                             role="Judge-Wing", room=room)
             )
-            pool.remove(wing_user)
+            if wing_user in preferred:
+                preferred.remove(wing_user)
+            else:
+                others.remove(wing_user)
 
         # ---------- 4. FREE SPEAKERS (max 3) -----------------------------------
-        free_speakers = pool[:3]
+        free_speakers = []
+        take = min(3, len(others))
+        free_speakers.extend(others[:take])
+        others = others[take:]
+        if len(free_speakers) < 3:
+            need = min(3 - len(free_speakers), len(preferred))
+            free_speakers.extend(preferred[:need])
+            preferred = preferred[need:]
         for idx, u in enumerate(free_speakers, start=1):
             assignments.append(
                 SpeakerSlot(debate_id=debate.id, user_id=u.id,
                             role=f"Free-{idx}", room=room)
             )
-        pool = pool[3:]
 
         # ---------- 5. EXTRA WINGS ---------------------------------------------
+        pool = preferred + others
         for u in pool:
             assignments.append(
                 SpeakerSlot(debate_id=debate.id, user_id=u.id,
@@ -438,74 +545,104 @@ def assign_bp_single_room(debate, users, room=1, mode="Random"):
     is_wing  = lambda u: getattr(u, "judge_skill", "") == "Wing"
     is_first = lambda u: getattr(u, "debate_skill", "") == "First Timer"
 
+    preferred = [u for u in pool if _prefers_judging(u)]
+    others = [u for u in pool if u not in preferred]
+
     # --- 1. Assign Chair ---
-    chair_user = next((u for u in pool if is_chair(u)), None)
+    chair_user = next((u for u in preferred if is_chair(u)), None)
     if not chair_user:
-        chair_user = next((u for u in pool if is_wing(u) and not is_first(u)), None)
+        chair_user = next((u for u in others if is_chair(u)), None)
     if not chair_user:
-        chair_user = next((u for u in pool if not is_first(u)), None)
+        chair_user = next((u for u in preferred if is_wing(u) and not is_first(u)), None)
+    if not chair_user:
+        chair_user = next((u for u in others if is_wing(u) and not is_first(u)), None)
+    if not chair_user:
+        chair_user = next((u for u in preferred if not is_first(u)), None)
+    if not chair_user:
+        chair_user = next((u for u in others if not is_first(u)), None)
     if not chair_user:
         return False, "No eligible Chair judge for BP."
 
     slots = [
         SpeakerSlot(debate_id=debate.id, user_id=chair_user.id, role="Judge-Chair", room=room)
     ]
-    pool.remove(chair_user)
+    if chair_user in preferred:
+        preferred.remove(chair_user)
+    else:
+        others.remove(chair_user)
+
+    pool = preferred + others
 
     # --- 2. Assign 8 speakers ---
     speakers = []
     if mode == "ProAm":
         ranked = sorted(pool, key=lambda u: _skill_for(u, "BP"), reverse=True)
         while len(speakers) < 8 and ranked:
-            if ranked:
-                speakers.append(ranked.pop(0))
+            cand = ranked.pop(0)
+            if cand in others:
+                others.remove(cand)
+            else:
+                preferred.remove(cand)
+            speakers.append(cand)
             if ranked and len(speakers) < 8:
-                speakers.append(ranked.pop())
+                cand = ranked.pop()
+                if cand in others:
+                    others.remove(cand)
+                else:
+                    preferred.remove(cand)
+                speakers.append(cand)
     else:
         first_timers = [u for u in pool if is_first(u)]
         non_firsts = [u for u in pool if not is_first(u)]
+        first_timers.sort(key=lambda u: _prefers_judging(u))
+        non_firsts.sort(key=lambda u: _prefers_judging(u))
         while first_timers and non_firsts and len(speakers) < 8:
             speakers.extend([first_timers.pop(0), non_firsts.pop(0)])
         while len(speakers) < 8 and non_firsts:
             speakers.append(non_firsts.pop(0))
         while len(speakers) < 8 and first_timers:
             speakers.append(first_timers.pop(0))
-    # Final check
+        for sp in speakers:
+            if sp in preferred:
+                preferred.remove(sp)
+            else:
+                others.remove(sp)
+
     if len(speakers) < 8:
         return False, "Not enough eligible debaters for BP."
 
-    # Now, group into 4 teams of 2, with ProAm enforced where possible
-    bp_roles = ["OG", "OG", "OO", "OO", "CG", "CG", "CO", "CO"]
     for user, role in zip(speakers, bp_roles):
         slots.append(SpeakerSlot(debate_id=debate.id, user_id=user.id, role=role, room=room))
-    # Remove these users from pool
-    for u in speakers:
-        pool.remove(u)
+
+    pool = preferred + others
 
     # --- 3. Assign Wings from remaining ---
-    # Assign up to 3 judges: first Wing, then fallback to any non-First-Timer, then (if needed) anyone
-    wings = [u for u in pool if is_wing(u)]
-    non_firsts_judge = [u for u in pool if not is_first(u) and u not in wings]
-    others = [u for u in pool if u not in wings + non_firsts_judge]
+    pref_pool = [u for u in pool if _prefers_judging(u)]
+    other_pool = [u for u in pool if u not in pref_pool]
+    wings = [u for u in pref_pool if is_wing(u)] + [u for u in other_pool if is_wing(u)]
+    non_firsts_judge = [
+        u for u in pref_pool if not is_first(u) and u not in wings
+    ] + [u for u in other_pool if not is_first(u) and u not in wings]
+    others_j = [u for u in pool if u not in wings + non_firsts_judge]
 
     wings_assigned = 0
     for u in wings:
-        if wings_assigned == 0:
-            slots.append(SpeakerSlot(debate_id=debate.id, user_id=u.id, role="Judge-Wing", room=room))
-        else:
-            slots.append(SpeakerSlot(debate_id=debate.id, user_id=u.id, role="Judge-Wing", room=room))
-        wings_assigned += 1
-
-    for u in non_firsts_judge:
         slots.append(SpeakerSlot(debate_id=debate.id, user_id=u.id, role="Judge-Wing", room=room))
         wings_assigned += 1
         if wings_assigned >= 3:
             break
-    for u in others:
-        if wings_assigned >= 3:
-            break
-        slots.append(SpeakerSlot(debate_id=debate.id, user_id=u.id, role="Judge-Wing", room=room))
-        wings_assigned += 1
+    if wings_assigned < 3:
+        for u in non_firsts_judge:
+            slots.append(SpeakerSlot(debate_id=debate.id, user_id=u.id, role="Judge-Wing", room=room))
+            wings_assigned += 1
+            if wings_assigned >= 3:
+                break
+    if wings_assigned < 3:
+        for u in others_j:
+            slots.append(SpeakerSlot(debate_id=debate.id, user_id=u.id, role="Judge-Wing", room=room))
+            wings_assigned += 1
+            if wings_assigned >= 3:
+                break
 
     # --- Commit (guaranteeing no duplicate SpeakerSlot) ---
     for slot in slots:
