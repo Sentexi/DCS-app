@@ -61,15 +61,23 @@ def _compute_room_counts(total, settings):
     if remaining > capacity:
         return None
 
-    for i in range(len(settings)):
-        if remaining <= 0:
-            break
-        add = min(maxs[i] - numbers[i], remaining)
-        numbers[i] += add
-        remaining -= add
-
-    if remaining != 0:
-        return None
+    # Distribute remaining participants in a round-robin fashion so that no
+    # room ends up more than one participant larger than another (where
+    # permitted by the max bounds).
+    while remaining > 0:
+        progressed = False
+        for i in range(len(settings)):
+            if remaining <= 0:
+                break
+            if numbers[i] < maxs[i]:
+                numbers[i] += 1
+                remaining -= 1
+                progressed = True
+        if not progressed:
+            # No room could accept more participants even though ``remaining``
+            # suggests otherwise. This should not happen due to the capacity
+            # check above, but guard against misconfiguration.
+            return None
     return numbers
 
 
