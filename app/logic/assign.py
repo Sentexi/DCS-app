@@ -73,6 +73,65 @@ def _compute_room_counts(total, settings):
     return numbers
 
 
+def _balance_preferred(rooms: List[List[User]]):
+    """Evenly distribute users who prefer judging across rooms.
+
+    Swaps participants between rooms so that the number of users with
+    ``prefer_judging`` set is balanced. While doing so, it keeps the size of
+    each room constant and never removes the only Chair judge from a room.
+    """
+
+    is_pref = lambda u: getattr(u, "prefer_judging", False)
+    is_chair = lambda u: getattr(u, "judge_skill", "") == "Chair"
+    chair_count = lambda room: sum(1 for u in room if is_chair(u))
+
+    total_pref = sum(1 for room in rooms for u in room if is_pref(u))
+    if not rooms or total_pref == 0:
+        return rooms
+
+    n_rooms = len(rooms)
+    base = total_pref // n_rooms
+    extra = total_pref % n_rooms
+    targets = [base + (1 if i < extra else 0) for i in range(n_rooms)]
+    pref_counts = [sum(1 for u in room if is_pref(u)) for room in rooms]
+
+    while True:
+        over = next((i for i, c in enumerate(pref_counts) if c > targets[i]), None)
+        under = next((i for i, c in enumerate(pref_counts) if c < targets[i]), None)
+        if over is None or under is None:
+            break
+
+        over_room = rooms[over]
+        under_room = rooms[under]
+
+        over_user = next(
+            (
+                u for u in over_room
+                if is_pref(u) and (not is_chair(u) or chair_count(over_room) > 1)
+            ),
+            None,
+        )
+        swap_user = next(
+            (
+                u for u in under_room
+                if not is_pref(u) and (not is_chair(u) or chair_count(under_room) > 1)
+            ),
+            None,
+        )
+        if not over_user or not swap_user:
+            break
+
+        over_room.remove(over_user)
+        under_room.append(over_user)
+        under_room.remove(swap_user)
+        over_room.append(swap_user)
+
+        pref_counts[over] -= 1
+        pref_counts[under] += 1
+
+    return rooms
+
+
 def _allocate_by_mode(users: List[User], counts: List[int], settings: List[Tuple[str, int, int]], mode: str) -> Tuple[List[List[User]], bool, str]:
     """Return per-room user lists based on the assignment mode."""
     pool = list(users)
@@ -85,6 +144,7 @@ def _allocate_by_mode(users: List[User], counts: List[int], settings: List[Tuple
         for idx, cnt in enumerate(counts):
             rooms[idx] = pool[:cnt]
             pool = pool[cnt:]
+        rooms = _balance_preferred(rooms)
         return rooms, unsafe, ""
 
     if mode == "Random":
@@ -101,6 +161,7 @@ def _allocate_by_mode(users: List[User], counts: List[int], settings: List[Tuple
             need = cnt - 1
             rooms[idx].extend(pool[:need])
             pool = pool[need:]
+        rooms = _balance_preferred(rooms)
         return rooms, unsafe, ""
 
     # determine skill metric
@@ -129,6 +190,7 @@ def _allocate_by_mode(users: List[User], counts: List[int], settings: List[Tuple
                     pool.remove(chair)
                 else:
                     unsafe = True
+        rooms = _balance_preferred(rooms)
         return rooms, unsafe, ""
 
     if mode == "ProAm":
@@ -153,12 +215,14 @@ def _allocate_by_mode(users: List[User], counts: List[int], settings: List[Tuple
                     pool.remove(chair)
                 else:
                     unsafe = True
+        rooms = _balance_preferred(rooms)
         return rooms, unsafe, ""
 
     random.shuffle(pool)
     for idx, cnt in enumerate(counts):
         rooms[idx] = pool[:cnt]
         pool = pool[cnt:]
+    rooms = _balance_preferred(rooms)
     return rooms, unsafe, ""
 
 def assign_speakers(debate, users, max_rooms=2, scenario=None):
@@ -311,7 +375,10 @@ def assign_opd_single_room(debate, users, room=1, mode="Random"):
             others.remove(chair_user)
 
         # ---------- 2. SIX MAIN SPEAKERS ---------------------------------------
-        if len(others) < 6:
+        needed = 6
+        while len(others) < needed and preferred:
+            others.append(preferred.pop(0))
+        if len(others) < needed:
             return False, "Not enough remaining for 6 main speakers."
 
         if mode == "ProAm":
@@ -487,6 +554,13 @@ def assign_bp_single_room(debate, users, room=1, mode="Random"):
         preferred.remove(chair_user)
     else:
         others.remove(chair_user)
+
+    # Ensure enough potential speakers remain
+    needed = 8
+    while len(others) < needed and preferred:
+        others.append(preferred.pop(0))
+    if len(others) < needed:
+        return False, "Not enough eligible debaters for BP."
 
     # --- 2. Assign 8 speakers ---
     speakers = []
