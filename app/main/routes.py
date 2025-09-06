@@ -240,15 +240,24 @@ def debate_view(debate_id):
                 flash("You can only vote for up to 2 topics per debate.", "danger")
         else:
             # Bump debate_count if this is their first vote in this debate
-            
+
             if user_votes_in_debate == 0 and round_num == 1:
                 if current_user.debate_count is None:
                     current_user.debate_count = 0
                 current_user.debate_count += 1
+                prev_skill = getattr(current_user, "debate_skill", "")
+                if prev_skill == "First Timer" and current_user.debate_count >= 5:
+                    current_user.debate_skill = "Beginner"
+                # TODO count debates where the user judged? maybe with a 0.5 factor?
+                # generally requires a debates_judged variable which should be initialized through the difference of debate_count and existing scores for this user ignoring BP debates
+                # probably best as an admin functionality that is executed once for all users in order to avoid re-evaluating this with every new debate
+                elif prev_skill == "Beginner" and current_user.debate_count >= 15:
+                    current_user.debate_skill = "Intermediate"
+                # step to advanced would make more sense to implement with a dependency on actual scores
             vote = Vote(user_id=current_user.id, topic_id=topic_id, round=round_num)
             db.session.add(vote)
             db.session.commit()
-            
+
             # -- live vote update start --
             now = datetime.utcnow()
             ten_minutes_ago = now - timedelta(minutes=10)
