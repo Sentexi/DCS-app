@@ -71,6 +71,7 @@ def create_debate():
             title=title, style=style, assignment_mode=assignment_mode, active=False
         )
         db.session.add(debate)
+        reset_prefer_free()
         reset_prefer_judging()
         db.session.commit()
         flash("Debate created!", "success")

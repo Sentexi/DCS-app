@@ -34,6 +34,9 @@ def dashboard():
     vote_percent = votes_cast = votes_total = user_role = None
     has_slot = False
     is_judge_chair = False
+    is_first_timer = False
+    if getattr(current_user, "debate_skill", "") == "First Timer":
+        is_first_timer = True
 
     winning_topic = None
     if current_debate:
@@ -96,11 +99,13 @@ def dashboard():
         debates=debates,
         single_open=current_debate,
         has_slot=has_slot,
+        is_first_timer=is_first_timer,
         is_judge_chair=is_judge_chair,
         second_voting_open=(
             current_debate.second_voting_open if current_debate else False
         ),
         winning_topic=winning_topic,
+        prefers_free=current_user.prefer_free,
         prefers_judging=current_user.prefer_judging,
     )
 
@@ -180,6 +185,7 @@ def dashboard_debates_json():
             "second_voting_open": d.second_voting_open,
             "assignment_complete": d.assignment_complete,
             "user_role": user_role,
+            "is_first_timer": is_first_timer,
             "is_judge_chair": is_judge_chair,
             "vote_percent": vote_percent,
             "votes_cast": votes_cast,
@@ -363,6 +369,7 @@ def debate_assignments_json(debate_id):
             "room": s.room,
             "user_id": s.user_id,
             "name": f"{s.user.first_name} {s.user.last_name}",
+            "prefer_free": s.user.prefer_free,
             "prefer_judging": s.user.prefer_judging,
         }
         for s in slots

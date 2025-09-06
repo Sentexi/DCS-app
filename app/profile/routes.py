@@ -110,25 +110,37 @@ def view():
             }
         )
 
-    return render_template('profile/view.html', opd_result_count=opd_result_count, recent_debates=recent_debates)
+    return render_template(
+        "profile/view.html",
+        opd_result_count=opd_result_count,
+        recent_debates=recent_debates,
+    )
 
 
-@profile_bp.route('/profile/prefer_judging', methods=['POST'])
+@profile_bp.route("/profile/prefer_free", methods=["POST"])
+@login_required
+def prefer_free():
+    data = request.get_json() or {}
+    pref = bool(data.get("prefer_free"))
+    current_user.prefer_free = pref
+    db.session.commit()
+    return jsonify({"prefer_free": current_user.prefer_free})
+
+
+@profile_bp.route("/profile/prefer_judging", methods=["POST"])
 @login_required
 def prefer_judging():
     data = request.get_json() or {}
-    pref = bool(data.get('prefer_judging'))
+    pref = bool(data.get("prefer_judging"))
     current_user.prefer_judging = pref
     db.session.commit()
-    return jsonify({'prefer_judging': current_user.prefer_judging})
+    return jsonify({"prefer_judging": current_user.prefer_judging})
 
 
-@profile_bp.route('/profile/debate/<int:debate_id>/results')
+@profile_bp.route("/profile/debate/<int:debate_id>/results")
 @login_required
 def debate_results(debate_id):
-    debate = Debate.query.options(
-        joinedload(Debate.speakerslots)
-    ).get_or_404(debate_id)
+    debate = Debate.query.options(joinedload(Debate.speakerslots)).get_or_404(debate_id)
 
     slots_by_room = {}
     for slot in debate.speakerslots:
