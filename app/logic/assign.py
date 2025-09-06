@@ -114,14 +114,16 @@ def _balance_preferred(rooms: List[List[User]]):
 
         over_user = next(
             (
-                u for u in over_room
+                u
+                for u in over_room
                 if is_pref(u) and (not is_chair(u) or chair_count(over_room) > 1)
             ),
             None,
         )
         swap_user = next(
             (
-                u for u in under_room
+                u
+                for u in under_room
                 if not is_pref(u) and (not is_chair(u) or chair_count(under_room) > 1)
             ),
             None,
@@ -140,7 +142,12 @@ def _balance_preferred(rooms: List[List[User]]):
     return rooms
 
 
-def _allocate_by_mode(users: List[User], counts: List[int], settings: List[Tuple[str, int, int]], mode: str) -> Tuple[List[List[User]], bool, str]:
+def _allocate_by_mode(
+    users: List[User],
+    counts: List[int],
+    settings: List[Tuple[str, int, int]],
+    mode: str,
+) -> Tuple[List[List[User]], bool, str]:
     """Return per-room user lists based on the assignment mode."""
     pool = list(users)
     unsafe = False
@@ -180,7 +187,7 @@ def _allocate_by_mode(users: List[User], counts: List[int], settings: List[Tuple
         ranked = sorted(pool, key=lambda u: _skill_for(u, style), reverse=True)
         start_idx = 0
         for idx, cnt in enumerate(counts):
-            rooms[idx] = ranked[start_idx:start_idx + cnt]
+            rooms[idx] = ranked[start_idx : start_idx + cnt]
             start_idx += cnt
 
         # ensure a Chair judge in every room
@@ -188,7 +195,8 @@ def _allocate_by_mode(users: List[User], counts: List[int], settings: List[Tuple
             if not any(getattr(u, "judge_skill", "") == "Chair" for u in room):
                 chair = next(
                     (
-                        u for u in pool
+                        u
+                        for u in pool
                         if getattr(u, "judge_skill", "") == "Chair" and u not in room
                     ),
                     None,
@@ -217,7 +225,14 @@ def _allocate_by_mode(users: List[User], counts: List[int], settings: List[Tuple
         # ensure Chair judges present
         for idx, room in enumerate(rooms):
             if not any(getattr(u, "judge_skill", "") == "Chair" for u in room):
-                chair = next((u for u in pool if getattr(u, "judge_skill", "") == "Chair" and u not in room), None)
+                chair = next(
+                    (
+                        u
+                        for u in pool
+                        if getattr(u, "judge_skill", "") == "Chair" and u not in room
+                    ),
+                    None,
+                )
                 if chair:
                     room[0], _ = chair, room[0]
                     pool.remove(chair)
@@ -233,6 +248,7 @@ def _allocate_by_mode(users: List[User], counts: List[int], settings: List[Tuple
     rooms = _balance_preferred(rooms)
     return rooms, unsafe, ""
 
+
 def assign_speakers(debate, users, max_rooms=2, scenario=None):
     """
     Dispatch to OPD or BP, splitting into at most max_rooms rooms,
@@ -245,10 +261,14 @@ def assign_speakers(debate, users, max_rooms=2, scenario=None):
     # Determine thresholds
     if debate.style == "OPD":
         split_threshold = 15
-        helper = lambda d, u, room=1: assign_opd_single_room(d, u, room=room, mode=d.assignment_mode)
+        helper = lambda d, u, room=1: assign_opd_single_room(
+            d, u, room=room, mode=d.assignment_mode
+        )
     elif debate.style == "BP":
         split_threshold = 18
-        helper = lambda d, u, room=1: assign_bp_single_room(d, u, room=room, mode=d.assignment_mode)
+        helper = lambda d, u, room=1: assign_bp_single_room(
+            d, u, room=room, mode=d.assignment_mode
+        )
     elif debate.style == "Dynamic":
         return assign_dynamic(debate, users, scenario=scenario)
     else:
@@ -274,15 +294,15 @@ def assign_speakers(debate, users, max_rooms=2, scenario=None):
         per_room = math.ceil(len(users) / num_rooms)
         for room in range(1, num_rooms + 1):
             start = (room - 1) * per_room
-            end   = start + per_room
+            end = start + per_room
             subset = users[start:end]
             ok, msg = helper(debate, subset, room=room)
             assignments_ok.append(ok)
-            messages.append(f"Room{room}: {msg}")    
+            messages.append(f"Room{room}: {msg}")
 
     if all(assignments_ok):
         debate.assignment_complete = True
-        db.session.commit() 
+        db.session.commit()
         return True, " | ".join(messages)
     else:
         return False, " | ".join(messages)
@@ -497,9 +517,6 @@ def assign_bp_single_room(debate, users, room=1, mode="Random"):
     3. 4 teams: OG, OO, CG, CO (two debaters each)
     4. Remaining: assign as Wings
     """
-    import random
-    from app.models import SpeakerSlot
-    from app.extensions import db
 
     pool = list(users)
     random.shuffle(pool)
@@ -512,63 +529,64 @@ def assign_bp_single_room(debate, users, room=1, mode="Random"):
 
         chair_user = pool.pop(0)
         slots = [
-            SpeakerSlot(debate_id=debate.id, user_id=chair_user.id, role="Judge-Chair", room=room)
+            SpeakerSlot(
+                debate_id=debate.id,
+                user_id=chair_user.id,
+                role="Judge-Chair",
+                room=room,
+            )
         ]
 
         speakers = pool[:8]
         for user, role in zip(speakers, bp_roles):
-            slots.append(SpeakerSlot(debate_id=debate.id, user_id=user.id, role=role, room=room))
+            slots.append(
+                SpeakerSlot(debate_id=debate.id, user_id=user.id, role=role, room=room)
+            )
         pool = pool[8:]
 
         wings_assigned = 0
         for u in pool:
             if wings_assigned >= 3:
                 break
-            slots.append(SpeakerSlot(debate_id=debate.id, user_id=u.id, role="Judge-Wing", room=room))
+            slots.append(
+                SpeakerSlot(
+                    debate_id=debate.id, user_id=u.id, role="Judge-Wing", room=room
+                )
+            )
             wings_assigned += 1
 
         for slot in slots:
-            exists = SpeakerSlot.query.filter_by(debate_id=debate.id, user_id=slot.user_id, room=room).first()
+            exists = SpeakerSlot.query.filter_by(
+                debate_id=debate.id, user_id=slot.user_id, room=room
+            ).first()
             if not exists:
                 db.session.add(slot)
         db.session.commit()
         return True, "BP speaker assignment complete."
 
-    # Split into preferred judges and others
+
+    # Chair judge selection via helper method
     preferred = [u for u in pool if getattr(u, "prefer_judging", False)]
     others = [u for u in pool if u not in preferred]
 
-    is_chair = lambda u: getattr(u, "judge_skill", "") == "Chair"
-    is_wing  = lambda u: getattr(u, "judge_skill", "") == "Wing"
-    is_first = lambda u: getattr(u, "debate_skill", "") == "First Timer"
+    chair_user = select_chair(pool)
+    if not chair_user:
+        return False, "No eligible Chair judge"
 
-    # --- 1. Assign Chair ---
-    chair_user = next((u for u in preferred if is_chair(u)), None)
-    if not chair_user:
-        chair_user = next((u for u in others if is_chair(u)), None)
-    if not chair_user:
-        combined = preferred + others
-        chair_user = next((u for u in combined if is_wing(u) and not is_first(u)), None)
-    if not chair_user:
-        combined = preferred + others
-        chair_user = next((u for u in combined if not is_first(u)), None)
-    if not chair_user:
-        return False, "No eligible Chair judge for BP."
-
-    slots = [
-        SpeakerSlot(debate_id=debate.id, user_id=chair_user.id, role="Judge-Chair", room=room)
-    ]
     if chair_user in preferred:
         preferred.remove(chair_user)
     else:
         others.remove(chair_user)
 
+    slots = [
+        SpeakerSlot(
+            debate_id=debate.id, user_id=chair_user.id, role="Judge-Chair", room=room
+        )
+    ]
+
     # Ensure enough potential speakers remain
-    needed = 8
-    while len(others) < needed and preferred:
+    while len(others) < 8 and preferred:
         others.append(preferred.pop(0))
-    if len(others) < needed:
-        return False, "Not enough eligible debaters for BP."
 
     # --- 2. Assign 8 speakers ---
     speakers = []
@@ -594,7 +612,9 @@ def assign_bp_single_room(debate, users, room=1, mode="Random"):
 
     # Now, group into 4 teams of 2, with ProAm enforced where possible
     for user, role in zip(speakers, bp_roles):
-        slots.append(SpeakerSlot(debate_id=debate.id, user_id=user.id, role=role, room=room))
+        slots.append(
+            SpeakerSlot(debate_id=debate.id, user_id=user.id, role=role, room=room)
+        )
     # Remove these users from pool
     for u in speakers:
         if u in others:
@@ -609,18 +629,31 @@ def assign_bp_single_room(debate, users, room=1, mode="Random"):
     other_others = [u for u in others if u not in other_wings + other_non_firsts]
 
     wings_assigned = 0
-    for group in [pref_wings, pref_non_firsts, pref_others, other_wings, other_non_firsts, other_others]:
+    for group in [
+        pref_wings,
+        pref_non_firsts,
+        pref_others,
+        other_wings,
+        other_non_firsts,
+        other_others,
+    ]:
         for u in group:
             if wings_assigned >= 3:
                 break
-            slots.append(SpeakerSlot(debate_id=debate.id, user_id=u.id, role="Judge-Wing", room=room))
+            slots.append(
+                SpeakerSlot(
+                    debate_id=debate.id, user_id=u.id, role="Judge-Wing", room=room
+                )
+            )
             wings_assigned += 1
         if wings_assigned >= 3:
             break
 
     # --- Commit (guaranteeing no duplicate SpeakerSlot) ---
     for slot in slots:
-        exists = SpeakerSlot.query.filter_by(debate_id=debate.id, user_id=slot.user_id, room=room).first()
+        exists = SpeakerSlot.query.filter_by(
+            debate_id=debate.id, user_id=slot.user_id, room=room
+        ).first()
         if not exists:
             db.session.add(slot)
     db.session.commit()
@@ -632,17 +665,33 @@ def assign_dynamic(debate, users, scenario=None):
     if not scenario:
         # Fallback to old heuristic if no scenario provided
         if len(users) <= 7:
-            return assign_opd_single_room(debate, users, room=1, mode=debate.assignment_mode)
+            if debate.assignment_mode == "True random":
+                return assign_opd_single_room_true_random(debate, users, room=1)
+            else:
+                return assign_opd_single_room(
+                    debate, users, room=1, mode=debate.assignment_mode
+                )
         elif len(users) <= 9:
-            return assign_bp_single_room(debate, users, room=1, mode=debate.assignment_mode)
+            return assign_bp_single_room(
+                debate, users, room=1, mode=debate.assignment_mode
+            )
         else:
             mid = len(users) // 2
-            ok1, msg1 = assign_opd_single_room(debate, users[:mid], room=1, mode=debate.assignment_mode)
-            ok2, msg2 = assign_bp_single_room(debate, users[mid:], room=2, mode=debate.assignment_mode)
+            if debate.assignment_mode == "True random":
+                ok1, msg1 = assign_opd_single_room_true_random(
+                    debate, users[:mid], room=1
+                )
+            else:
+                ok1, msg1 = assign_opd_single_room(
+                    debate, users[:mid], room=1, mode=debate.assignment_mode
+                )
+            ok2, msg2 = assign_bp_single_room(
+                debate, users[mid:], room=2, mode=debate.assignment_mode
+            )
             return ok1 and ok2, f"Dynamic: {msg1}; {msg2}"
 
-    room_types = {'O': ('OPD', 7, 12), 'B': ('BP', 9, 11)}
-    letters = scenario.split('-')
+    room_types = {"O": ("OPD", 7, 12), "B": ("BP", 9, 11)}
+    letters = scenario.split("-")
     try:
         settings = [room_types[c.upper()] for c in letters]
     except KeyError:
@@ -652,25 +701,30 @@ def assign_dynamic(debate, users, scenario=None):
     if counts is None:
         return False, "Participant count doesn't fit the selected scenario"
 
-    rooms, unsafe, msg = _allocate_by_mode(users, counts, settings, debate.assignment_mode)
+    rooms, unsafe, msg = _allocate_by_mode(
+        users, counts, settings, debate.assignment_mode
+    )
     if msg:
         return False, msg
 
     messages = []
     success = True
     for i, (room_users, spec) in enumerate(zip(rooms, settings), start=1):
-        if spec[0] == 'OPD':
-            ok, msg = assign_opd_single_room(debate, room_users, room=i, mode=debate.assignment_mode)
+        if spec[0] == "OPD":
+            ok, msg = assign_opd_single_room(
+                debate, room_users, room=i, mode=debate.assignment_mode
+            )
         else:
-            ok, msg = assign_bp_single_room(debate, room_users, room=i, mode=debate.assignment_mode)
+            ok, msg = assign_bp_single_room(
+                debate, room_users, room=i, mode=debate.assignment_mode
+            )
         success = success and ok
         messages.append(msg)
 
     if unsafe:
-        messages.append('Fallback Chairs were used')
+        messages.append("Fallback Chairs were used")
 
     if success:
         debate.assignment_complete = True
         db.session.commit()
-    return success, ' | '.join(messages)
-
+    return success, " | ".join(messages)
