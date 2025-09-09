@@ -18,6 +18,7 @@ class JoinTimeEnum(db.Enum):
 class JudgeChoiceEnum(db.Enum):
     no = "no"
     wing = "wing"
+    trainee = "trainee"
     chair = "chair"
 
 
@@ -33,6 +34,7 @@ class JudgeSkillEnum(db.Enum):
     cant_judge = "Cant judge"
     wing = "Wing"
     chair = "Chair"
+    trainee = "Trainee"
 
 
 # Assignment mode for distributing speakers
@@ -219,7 +221,13 @@ JOIN_SKILL = {
     "1y-2y": "Advanced",
     ">2y": "Expert",
 }
-JUDGE_SKILL = {"no": "Cant judge", "wing": "Wing", "chair": "Chair"}
+
+JUDGE_SKILL = {
+    "no": "Cant judge",
+    "wing": "Wing",
+    "chair": "Chair",
+    "trainee": "Trainee",
+}
 
 
 def apply_skills(user):

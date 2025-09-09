@@ -312,34 +312,67 @@ def select_chair(pool):
     preferred = [u for u in pool if getattr(u, "prefer_judging", False)]
     others = [u for u in pool if u not in preferred]
 
+    is_trainee = [u for u in pool if getattr(u, "judge_skill", "") == "Trainee"]
+
     is_chair = lambda u: getattr(u, "judge_skill", "") == "Chair"
     is_wing = lambda u: getattr(u, "judge_skill", "") == "Wing"
     is_first = lambda u: getattr(u, "debate_skill", "") == "First Timer"
 
-    # --- 1. Assign Chair ---
-    chair_user = next((u for u in preferred if is_chair(u)), None)
-    if not chair_user:
-        chair_user = next((u for u in others if is_chair(u)), None)
-    if not chair_user:
-        combined = preferred + others
-        chair_user = next((u for u in combined if is_wing(u) and not is_first(u)), None)
-    if not chair_user:
-        combined = preferred + others
-        chair_user = next((u for u in combined if not is_first(u)), None)
-    return chair_user
+    # this parameter simplifies the wing selection later on
+    training_mode = False
+
+    # trainee will get the role of chair until they graduate to actual chair status, no preferences are respected (could go through the preferred parameter but an intensive training phase is probably best anyway?)
+    # 8 participants are required to guarantee a wing judge
+    if is_trainee and len(pool) >= 8:
+        chair_user = is_trainee.pop(0)
+        training_mode = True
+
+    else:
+        chair_user = next((u for u in preferred if is_chair(u)), None)
+        if not chair_user:
+            chair_user = next((u for u in others if is_chair(u)), None)
+        if not chair_user:
+            combined = preferred + others
+            chair_user = next(
+                (u for u in combined if is_wing(u) and not is_first(u)), None
+            )
+        if not chair_user:
+            combined = preferred + others
+            chair_user = next((u for u in combined if not is_first(u)), None)
+
+    return chair_user, training_mode
 
 
-def select_first_wing(preferred, others):
+def select_first_wing(preferred, pref_free, others, training_mode):
+    is_chair = lambda u: getattr(u, "judge_skill", "") == "Chair"
     is_wing = lambda u: getattr(u, "judge_skill", "") == "Wing"
     is_first = lambda u: getattr(u, "debate_skill", "") == "First Timer"
 
-    wing_user = next((u for u in preferred if is_wing(u) and not is_first(u)), None)
-    if not wing_user:
-        wing_user = next((u for u in preferred if not is_first(u)), None)
-    if not wing_user:
-        wing_user = next((u for u in others if is_wing(u) and not is_first(u)), None)
-    if not wing_user:
-        wing_user = next((u for u in others if not is_first(u)), None)
+    remaining_pool = preferred + pref_free + others
+    chairs = [u for u in remaining_pool if getattr(u, "judge_skill", "") == "Chair"]
+
+    # distinction depending on whether or not the Chair Judge is a trainee
+    if training_mode:
+        wing_user = next((u for u in preferred if is_chair(u)), None)
+        if not wing_user and chairs:
+            wing_user = chairs.pop(0)
+        # this scenario could be handled more defensively (others chosen as base for higher probability of finding someone) but should be very unlikely
+        # TODO temporary quick and dirty solution that could be improved
+        if not wing_user:
+            wing_user = next(
+                (u for u in others if is_wing(u) and not is_first(u)), None
+            )
+
+    else:
+        wing_user = next((u for u in preferred if is_wing(u) and not is_first(u)), None)
+        if not wing_user:
+            wing_user = next((u for u in preferred if not is_first(u)), None)
+        if not wing_user:
+            wing_user = next(
+                (u for u in others if is_wing(u) and not is_first(u)), None
+            )
+        if not wing_user:
+            wing_user = next((u for u in others if not is_first(u)), None)
     return wing_user
 
 
@@ -464,6 +497,8 @@ def assign_opd_single_room(debate, users, room=1, mode="Random"):
       5. Remaining participants become extra Wings
     """
 
+    is_chair = lambda u: getattr(u, "judge_skill", "") == "Chair"
+
     pool = list(users)
     random.shuffle(pool)  # randomness
 
@@ -482,7 +517,7 @@ def assign_opd_single_room(debate, users, room=1, mode="Random"):
     pref_free = [u for u in pool if getattr(u, "prefer_free", False)]
     others = [u for u in pool if u not in preferred and u not in pref_free]
 
-    chair_user = select_chair(pool)
+    chair_user, training_mode = select_chair(pool)
 
     if not chair_user:
         return False, "No eligible Chair judge"
@@ -499,10 +534,31 @@ def assign_opd_single_room(debate, users, room=1, mode="Random"):
         )
     ]
 
+    # this scenario matters if a trainee has been chosen as chair because it is possible that otherwise no eligible wing judges remain and generally the probability of finding a chair as wing judge is low if main speakers are assigned randomly
+    if training_mode:
+        wing_user = select_first_wing(preferred, pref_free, others, training_mode)
+
+        if wing_user:
+            assignments.append(
+                SpeakerSlot(
+                    debate_id=debate.id,
+                    user_id=wing_user.id,
+                    role="Judge-Wing",
+                    room=room,
+                )
+            )
+
+        preferred, pref_free, others = remove_user(
+            wing_user, preferred, pref_free, others
+        )
+
     # ---------- 2. SIX MAIN SPEAKERS ---------------------------------------
     while len(others) < 6 and preferred:
         # users who prefer free speeches are prioritized higher than others who prefer judging here, this is entirely arbitrary
         others.append(preferred.pop(0))
+
+    while len(others) < 6 and pref_free:
+        others.append(pref_free.pop(0))
 
     if mode == "ProAm":
         ranked = sorted(others, key=lambda u: _skill_for(u, "OPD"), reverse=True)
@@ -518,23 +574,29 @@ def assign_opd_single_room(debate, users, room=1, mode="Random"):
             assignments.append(
                 SpeakerSlot(debate_id=debate.id, user_id=u.id, role=side, room=room)
             )
+
         for u in main_speakers:
             preferred, pref_free, others = remove_user(u, preferred, pref_free, others)
 
         # ---------- 3. FIRST WING ----------------------------------------------
-    wing_user = select_first_wing(preferred, others)
+    # only if no wing judge has been assigned yet, in case of a chair with chair status it makes sense to prioritize main speaker selection (particularly in case of 7 speakers, which is handled in the chair selection method and will return a chair with non-trainee status, then there can not be a wing judge selection)
 
-    if wing_user:
-        assignments.append(
-            SpeakerSlot(
-                debate_id=debate.id,
-                user_id=wing_user.id,
-                role="Judge-Wing",
-                room=room,
+    if not training_mode:
+        wing_user = select_first_wing(preferred, pref_free, others, training_mode)
+
+        if wing_user:
+            assignments.append(
+                SpeakerSlot(
+                    debate_id=debate.id,
+                    user_id=wing_user.id,
+                    role="Judge-Wing",
+                    room=room,
+                )
             )
-        )
 
-    preferred, pref_free, others = remove_user(wing_user, preferred, pref_free, others)
+        preferred, pref_free, others = remove_user(
+            wing_user, preferred, pref_free, others
+        )
 
     # ---------- 4. FREE SPEAKERS (max 3) -----------------------------------
     free_speakers = pref_free[:3]
@@ -633,7 +695,6 @@ def assign_bp_single_room(debate, users, room=1, mode="Random"):
                 db.session.add(slot)
         db.session.commit()
         return True, "BP speaker assignment complete."
-
 
     # Chair judge selection via helper method
     preferred = [u for u in pool if getattr(u, "prefer_judging", False)]
