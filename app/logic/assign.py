@@ -376,15 +376,46 @@ def select_first_wing(preferred, pref_free, others, training_mode):
     return wing_user
 
 
+# selects wing judges ahead of main speaker selection in order to try to enforce that participants are qualified (otherwise first-timers might be selected)
+# might lead to issues analogous to chair selection where the size of the pool leads to high probability of the same participants judging - long-term solution might be voluntary suspension that could be tied to judge status in the last debates
+def select_wings(preferred, pool):
+    is_wing = lambda u: getattr(u, "judge_skill", "") == "Wing"
+    is_first = lambda u: getattr(u, "debate_skill", "") == "First Timer"
+
+    # at this point the first wing has already been selected, only main speakers and free speakers are counted
+    wings = []
+    required_wings = len(pool) - 9
+    if required_wings <= 0:
+        return wings
+    else:
+        while len(wings) < required_wings:
+            if preferred:
+                wings.append(preferred.pop(0))
+            else:
+                candidate = next(
+                    (u for u in pool if is_wing(u) and not is_first(u)), None
+                )
+                # TODO remove these users from the respective lists OUTSIDE of this method, not handled here
+                if candidate:
+                    wings.append(candidate)
+                else:
+                    candidate = next((u for u in pool if not is_first(u)), None)
+                    if candidate:
+                        wings.append(candidate)
+    return wings
+
+
 # avoids users being in multiple sets after already being assigned a role, relevant in case of users setting both preferences or the assigned chair having set a preference
-def remove_user(user, preferred, pref_free, others):
+def remove_user(user, preferred, pref_free, others, pool):
     if user in preferred:
         preferred.remove(user)
     if user in pref_free:
         pref_free.remove(user)
     if user in others:
         others.remove(user)
-    return preferred, pref_free, others
+    if user in pool:
+        pool.remove(user)
+    return preferred, pref_free, others, pool
 
 
 def integrity_check_opd(assignments):
@@ -523,7 +554,9 @@ def assign_opd_single_room(debate, users, room=1, mode="Random"):
         return False, "No eligible Chair judge"
 
     # chair_user is removed from all sets at once
-    preferred, pref_free, others = remove_user(chair_user, preferred, pref_free, others)
+    preferred, pref_free, others, pool = remove_user(
+        chair_user, preferred, pref_free, others, pool
+    )
 
     assignments = [
         SpeakerSlot(
@@ -534,10 +567,10 @@ def assign_opd_single_room(debate, users, room=1, mode="Random"):
         )
     ]
 
-    # this scenario matters if a trainee has been chosen as chair because it is possible that otherwise no eligible wing judges remain and generally the probability of finding a chair as wing judge is low if main speakers are assigned randomly
-    if training_mode:
+    # the first wing judge always exists for a pool of at least eight participants but the chair has already been removed, so 7 is the magic number here
+    if len(pool) > 6:
         wing_user = select_first_wing(preferred, pref_free, others, training_mode)
-
+        print("found a wing judge")
         if wing_user:
             assignments.append(
                 SpeakerSlot(
@@ -548,14 +581,31 @@ def assign_opd_single_room(debate, users, room=1, mode="Random"):
                 )
             )
 
-        preferred, pref_free, others = remove_user(
-            wing_user, preferred, pref_free, others
+        preferred, pref_free, others, pool = remove_user(
+            wing_user, preferred, pref_free, others, pool
         )
 
-    # ---------- 2. SIX MAIN SPEAKERS ---------------------------------------
-    while len(others) < 6 and preferred:
-        # users who prefer free speeches are prioritized higher than others who prefer judging here, this is entirely arbitrary
-        others.append(preferred.pop(0))
+    # ---------- 2. WING SELECTION ------------------------------------------
+
+    # this method should automatically assign the correct number of wing judges
+    wing_judges = select_wings(preferred, pool)
+    for j in wing_judges:
+        preferred, pref_free, others, pool = remove_user(
+            j, preferred, pref_free, others, pool
+        )
+        assignments.append(
+            SpeakerSlot(
+                debate_id=debate.id,
+                user_id=j.id,
+                role="Judge-Wing",
+                room=room,
+            )
+        )
+
+    # ---------- 3. SIX MAIN SPEAKERS ---------------------------------------
+
+    # wing selection is finished, therefore judging preference is obsolete
+    others = list(set(others + preferred))
 
     while len(others) < 6 and pref_free:
         others.append(pref_free.pop(0))
@@ -576,38 +626,15 @@ def assign_opd_single_room(debate, users, room=1, mode="Random"):
             )
 
         for u in main_speakers:
-            preferred, pref_free, others = remove_user(u, preferred, pref_free, others)
-
-        # ---------- 3. FIRST WING ----------------------------------------------
-    # only if no wing judge has been assigned yet, in case of a chair with chair status it makes sense to prioritize main speaker selection (particularly in case of 7 speakers, which is handled in the chair selection method and will return a chair with non-trainee status, then there can not be a wing judge selection)
-
-    if not training_mode:
-        wing_user = select_first_wing(preferred, pref_free, others, training_mode)
-
-        if wing_user:
-            assignments.append(
-                SpeakerSlot(
-                    debate_id=debate.id,
-                    user_id=wing_user.id,
-                    role="Judge-Wing",
-                    room=room,
-                )
+            preferred, pref_free, others, pool = remove_user(
+                u, preferred, pref_free, others, pool
             )
-
-        preferred, pref_free, others = remove_user(
-            wing_user, preferred, pref_free, others
-        )
 
     # ---------- 4. FREE SPEAKERS (max 3) -----------------------------------
     free_speakers = pref_free[:3]
 
     while len(free_speakers) < 3 and len(others) > 0:
         free_speakers.append(others.pop(0))
-
-    # TODO: force more free speakers if there are many judging preferences?
-    # if this loop is not included, there might be fewer than three free speeches yet potentially many wing judges (tested with 9 users, 2 free speakers and 3 wings as result)
-    while len(free_speakers) < 3 and len(preferred) > 0:
-        free_speakers.append(preferred.pop(0))
 
     # duplicate removal just in case of rare coincidences with someone setting both preferences and somehow getting selected twice above
     free_speakers = set(free_speakers)
@@ -618,16 +645,8 @@ def assign_opd_single_room(debate, users, room=1, mode="Random"):
                 debate_id=debate.id, user_id=u.id, role=f"Free-{idx}", room=room
             )
         )
-        preferred, pref_free, others = remove_user(u, preferred, pref_free, others)
-
-    # at this point duplicates are still possible if users did not get their preferred assignments, which is the purpose of the set() method here
-    others = set(others + preferred + pref_free)
-
-    # ---------- 5. EXTRA WINGS ---------------------------------------------
-
-    for u in others:
-        assignments.append(
-            SpeakerSlot(debate_id=debate.id, user_id=u.id, role="Judge-Wing", room=room)
+        preferred, pref_free, others, pool = remove_user(
+            u, preferred, pref_free, others, pool
         )
 
     # ---------- COMMIT ------------------------------------------------------
