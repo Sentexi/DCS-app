@@ -252,6 +252,11 @@ def debate_view(debate_id):
                     current_user.debate_count = 0
                 current_user.debate_count += 1
                 prev_skill = getattr(current_user, "debate_skill", "")
+                # if this is the user's third debate overall, they graduate to Newbie status and are more eligible for wing judge selection
+                prev_judge_skill = getattr(current_user, "judge_skill", "")
+                if prev_judge_skill == "Cant judge" and current_user.debate_count == 3:
+                    current_user.judge_skill = "Newbie"
+                # experience level of user is upgraded to Beginner with the fifth debate
                 if prev_skill == "First Timer" and current_user.debate_count >= 5:
                     current_user.debate_skill = "Beginner"
                 # TODO count debates where the user judged? maybe with a 0.5 factor?

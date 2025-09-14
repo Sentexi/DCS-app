@@ -346,7 +346,8 @@ def select_chair(pool):
 def select_first_wing(preferred, pref_free, others, training_mode):
     is_chair = lambda u: getattr(u, "judge_skill", "") == "Chair"
     is_wing = lambda u: getattr(u, "judge_skill", "") == "Wing"
-    is_first = lambda u: getattr(u, "debate_skill", "") == "First Timer"
+    is_newbie = lambda u: getattr(u, "judge_skill", "") == "Newbie"
+    is_suspended = lambda u: getattr(u, "judge_skill", "") == "Suspended"
 
     remaining_pool = preferred + pref_free + others
     chairs = [u for u in remaining_pool if getattr(u, "judge_skill", "") == "Chair"]
@@ -356,23 +357,29 @@ def select_first_wing(preferred, pref_free, others, training_mode):
         wing_user = next((u for u in preferred if is_chair(u)), None)
         if not wing_user and chairs:
             wing_user = chairs.pop(0)
-        # this scenario could be handled more defensively (others chosen as base for higher probability of finding someone) but should be very unlikely
-        # TODO temporary quick and dirty solution that could be improved
+        # Newbies who set the judging preference are preferred over users of wing status
+        wing_user = next((u for u in preferred if is_wing(u)), None)
         if not wing_user:
-            wing_user = next(
-                (u for u in others if is_wing(u) and not is_first(u)), None
-            )
+            wing_user = next((u for u in preferred if is_newbie(u)), None)
+        if not wing_user:
+            wing_user = next((u for u in others if is_wing(u)), None)
+        if not wing_user:
+            wing_user = next((u for u in others if is_newbie(u)), None)
+        if not wing_user:
+            wing_user = next((u for u in others if not is_suspended(u)), None)
 
     else:
-        wing_user = next((u for u in preferred if is_wing(u) and not is_first(u)), None)
+        wing_user = next((u for u in preferred if is_wing(u)), None)
         if not wing_user:
-            wing_user = next((u for u in preferred if not is_first(u)), None)
+            wing_user = next((u for u in preferred if is_newbie(u)), None)
         if not wing_user:
-            wing_user = next(
-                (u for u in others if is_wing(u) and not is_first(u)), None
-            )
+            wing_user = next((u for u in others if is_wing(u)), None)
         if not wing_user:
-            wing_user = next((u for u in others if not is_first(u)), None)
+            wing_user = next((u for u in others if is_newbie(u)), None)
+
+        # this selects either users of Cant Judge status or chairs, statistically probably more of Cant Judge status
+        if not wing_user:
+            wing_user = next((u for u in others if not is_suspended(u)), None)
     return wing_user
 
 
@@ -380,7 +387,8 @@ def select_first_wing(preferred, pref_free, others, training_mode):
 # might lead to issues analogous to chair selection where the size of the pool leads to high probability of the same participants judging - long-term solution might be voluntary suspension that could be tied to judge status in the last debates
 def select_wings(preferred, pool):
     is_wing = lambda u: getattr(u, "judge_skill", "") == "Wing"
-    is_first = lambda u: getattr(u, "debate_skill", "") == "First Timer"
+    is_newbie = lambda u: getattr(u, "judge_skill", "") == "Newbie"
+    is_suspended = lambda u: getattr(u, "judge_skill", "") == "Suspended"
 
     # at this point the first wing has already been selected, only main speakers and free speakers are counted
     wings = []
@@ -389,19 +397,21 @@ def select_wings(preferred, pool):
         return wings
     else:
         while len(wings) < required_wings:
+            # Newbies who set the judging preference are preferred over users of wing status
             if preferred:
                 wings.append(preferred.pop(0))
             else:
-                candidate = next(
-                    (u for u in pool if is_wing(u) and not is_first(u)), None
-                )
-                # TODO remove these users from the respective lists OUTSIDE of this method, not handled here
-                if candidate:
-                    wings.append(candidate)
-                else:
-                    candidate = next((u for u in pool if not is_first(u)), None)
-                    if candidate:
-                        wings.append(candidate)
+                wing_user = next((u for u in preferred if is_wing(u)), None)
+                if not wing_user:
+                    wing_user = next((u for u in preferred if is_newbie(u)), None)
+                if not wing_user:
+                    wing_user = next((u for u in pool if is_wing(u)), None)
+                if not wing_user:
+                    wing_user = next((u for u in pool if is_newbie(u)), None)
+                if not wing_user:
+                    wing_user = next((u for u in pool if not is_suspended(u)), None)
+                if wing_user:
+                    wings.append(wing_user)
     return wings
 
 
@@ -528,8 +538,6 @@ def assign_opd_single_room(debate, users, room=1, mode="Random"):
       5. Remaining participants become extra Wings
     """
 
-    is_chair = lambda u: getattr(u, "judge_skill", "") == "Chair"
-
     pool = list(users)
     random.shuffle(pool)  # randomness
 
@@ -538,12 +546,8 @@ def assign_opd_single_room(debate, users, room=1, mode="Random"):
 
     roles = ["Gov"] * 3 + ["Opp"] * 3
 
-    is_first = lambda u: getattr(u, "debate_skill", "") == "First Timer"
-
-    # judging preference is only considered for non first-time debaters
-    preferred = [
-        u for u in pool if getattr(u, "prefer_judging", False) and not is_first(u)
-    ]
+    # judging preference is only considered for users of either Chair, Wing, or Newbie status in judge selection methods
+    preferred = [u for u in pool if getattr(u, "prefer_judging", False)]
     # it is possible that users set both preferences, this will be considered in free speaker/wing selection
     pref_free = [u for u in pool if getattr(u, "prefer_free", False)]
     others = [u for u in pool if u not in preferred and u not in pref_free]
@@ -570,7 +574,6 @@ def assign_opd_single_room(debate, users, room=1, mode="Random"):
     # the first wing judge always exists for a pool of at least eight participants but the chair has already been removed, so 7 is the magic number here
     if len(pool) > 6:
         wing_user = select_first_wing(preferred, pref_free, others, training_mode)
-        print("found a wing judge")
         if wing_user:
             assignments.append(
                 SpeakerSlot(

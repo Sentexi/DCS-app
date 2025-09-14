@@ -32,9 +32,11 @@ class DebateSkillEnum(db.Enum):
 
 class JudgeSkillEnum(db.Enum):
     cant_judge = "Cant judge"
+    newbie = "Newbie"
+    suspended = "Suspended"
     wing = "Wing"
-    chair = "Chair"
     trainee = "Trainee"
+    chair = "Chair"
 
 
 # Assignment mode for distributing speakers
@@ -224,15 +226,19 @@ JOIN_SKILL = {
 
 JUDGE_SKILL = {
     "no": "Cant judge",
+    "newbie": "Newbie",
+    "suspended": "Suspended",
     "wing": "Wing",
-    "chair": "Chair",
     "trainee": "Trainee",
+    "chair": "Chair",
 }
 
 
 def apply_skills(user):
     user.debate_skill = JOIN_SKILL.get(user.date_joined_choice, "First Timer")
-    user.judge_skill = JUDGE_SKILL.get(user.judge_choice, "Cant judge")
+    # override this manually for experienced new users until a more nuanced survey has been found?
+    user.judge_skill = "Cant judge"
+    # user.judge_skill = JUDGE_SKILL.get(user.judge_choice, "Cant judge")
 
 
 class SpeakerSlot(db.Model):

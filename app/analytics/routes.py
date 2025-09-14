@@ -8,20 +8,19 @@ from app.models import OpdResult, SpeakerSlot
 from . import analytics_bp
 
 
-@analytics_bp.route('/analytics')
+@analytics_bp.route("/analytics")
 @login_required
 def analytics_dashboard():
     # Collect all OPD scores
     scores = [r.points for r in OpdResult.query.all() if r.points is not None]
 
     # Gather points per debate and room
-    query = (
-        db.session.query(OpdResult.debate_id, SpeakerSlot.room, OpdResult.points)
-        .join(
-            SpeakerSlot,
-            (OpdResult.debate_id == SpeakerSlot.debate_id)
-            & (OpdResult.user_id == SpeakerSlot.user_id),
-        )
+    query = db.session.query(
+        OpdResult.debate_id, SpeakerSlot.room, OpdResult.points
+    ).join(
+        SpeakerSlot,
+        (OpdResult.debate_id == SpeakerSlot.debate_id)
+        & (OpdResult.user_id == SpeakerSlot.user_id),
     )
     data = {}
     for debate_id, room, points in query.all():
@@ -38,13 +37,13 @@ def analytics_dashboard():
     for room in sorted(room_medians.keys()):
         datasets.append(
             {
-                'label': f'Room {room}',
-                'data': [room_medians[room].get(deb_id) for deb_id in labels],
+                "label": f"Room {room}",
+                "data": [room_medians[room].get(deb_id) for deb_id in labels],
             }
         )
 
     return render_template(
-        'analytics/analytics.html',
+        "analytics/analytics.html",
         hist_data=scores,
         labels=labels,
         datasets=datasets,
