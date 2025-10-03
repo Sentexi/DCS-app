@@ -547,7 +547,7 @@ def assign_opd_single_room(debate, users, room=1, mode="Random"):
     roles = ["Gov"] * 3 + ["Opp"] * 3
 
     # judging preference is only considered for users of either Chair, Wing, or Newbie status in judge selection methods
-    preferred = [u for u in pool if getattr(u, "prefer_judging", False)]
+    preferred = [u for u in pool if getattr(u, "prefer_judging", False) and getattr(u, "judge_skill", "") != "Suspended"]
     # it is possible that users set both preferences, this will be considered in free speaker/wing selection
     pref_free = [u for u in pool if getattr(u, "prefer_free", False)]
     others = [u for u in pool if u not in preferred and u not in pref_free]
