@@ -17,7 +17,6 @@
               <th>Role</th>
               <th>Name</th>
               <th>Skill Level</th>
-              <th>Judge Skill</th>
             </tr>
           </thead>
           <tbody>
@@ -26,7 +25,6 @@
               <td>{{ slot.role }}</td>
               <td>{{ user_map[slot.user_id].first_name }} {{ user_map[slot.user_id].last_name }}</td>
               <td>{{ user_map[slot.user_id].debate_skill }}</td>
-              <td>{{ user_map[slot.user_id].judge_skill }}</td>
             </tr>
           {% endfor %}
           </tbody>

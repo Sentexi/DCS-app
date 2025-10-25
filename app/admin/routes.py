@@ -49,7 +49,6 @@ def admin_dashboard():
         else:
             count = 0
         voter_counts[debate.id] = count
-    print(voter_counts)
     return render_template(
         "admin/dashboard.html", debates=debates, voter_counts=voter_counts
     )
@@ -62,13 +61,12 @@ def admin_dashboard():
 def create_debate():
     if request.method == "POST":
         title = request.form["title"]
-        style = request.form["style"]
         assignment_mode = request.form.get("assignment_mode", "Random")
-        if not title or style not in ["OPD", "BP", "Dynamic"]:
+        if not title:
             flash("Please fill all fields correctly.", "danger")
             return redirect(url_for("admin.create_debate"))
         debate = Debate(
-            title=title, style=style, assignment_mode=assignment_mode, active=False
+            title=title, style="Dynamic", assignment_mode=assignment_mode, active=False
         )
         db.session.add(debate)
         reset_prefer_free()

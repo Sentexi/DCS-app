@@ -11,6 +11,7 @@ from app.utils import compute_winning_topic
 
 from . import main_bp
 
+is_first = lambda u: getattr(u, "debate_skill", "") == "First Timer"
 
 @main_bp.route("/privacy")
 def privacy():
@@ -34,9 +35,7 @@ def dashboard():
     vote_percent = votes_cast = votes_total = user_role = None
     has_slot = False
     is_judge_chair = False
-    is_first_timer = False
-    if getattr(current_user, "debate_skill", "") == "First Timer":
-        is_first_timer = True
+    is_first_timer = is_first(current_user)
 
     winning_topic = None
     if current_debate:
@@ -185,7 +184,7 @@ def dashboard_debates_json():
             "second_voting_open": d.second_voting_open,
             "assignment_complete": d.assignment_complete,
             "user_role": user_role,
-            "is_first_timer": is_first_timer,
+            "is_first_timer": is_first(current_user),
             "is_judge_chair": is_judge_chair,
             "vote_percent": vote_percent,
             "votes_cast": votes_cast,
