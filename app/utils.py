@@ -2,7 +2,7 @@ import smtplib
 from email.message import EmailMessage
 from itsdangerous import URLSafeTimedSerializer
 from flask import current_app
-
+import datetime
 
 def send_email(to, subject, body):
     msg = EmailMessage()
@@ -72,6 +72,10 @@ def compute_winning_topic(debate):
     max_votes = max(c[1] for c in counts)
     winners = [tid for tid, c in counts if c == max_votes]
     if len(winners) == 1:
+        #this is a bit of an experiment
+        current_date = datetime.datetime.now().strftime("%d.%m.%Y")
+        debate.title = current_date + ": " + Topic.query.get(winners[0]).text
+        db.session.commit()
         return Topic.query.get(winners[0])
     return None
 

@@ -1,4 +1,4 @@
-from flask import render_template, request, redirect, url_for, flash
+from flask import render_template, request, redirect, url_for, session, flash
 from flask_login import login_required, current_user
 from app.extensions import db
 from app.models import (
@@ -113,11 +113,12 @@ def judging(debate_id):
         db.session.commit()
         flash("Scores saved.", "success")
         feedback = {}
-        for j in judges:
-            key = f"feedback_{j.user_id}"
-            values = request.form.getlist(key)
-            feedback[j.user_id] = values[0] if values else None
-        session["feedback"] = feedback
+        if len(judges) > 1:
+            for j in judges:
+                key = f"feedback_{j.user_id}"
+                values = request.form.getlist(key)
+                feedback[j.user_id] = values[0] if values else None
+            session["feedback"] = feedback
 
         return redirect(url_for("debate.judging", debate_id=debate_id))
 
@@ -173,37 +174,41 @@ def finalize(debate_id):
         speaker_slots = slots_by_room[room]
         judge_ids = judges_by_room[room]
         # this will be empty or only contain ChairID: None in cases of no wing judges, which will not cause any changes in status
-        feedback_values = session.get("feedback", {})
-
-        for j in judge_ids:
-            # does not need to consider neutral feedback, as that never changes the status
-            # feedback_values might also contain a None value for the chair, which is also ignored
-            judge_user = User.query.filter_by(id=str(j)).first()
-            prev_skill = judge_user.judge_skill
-            # user is upgraded in status if the previous status was Newbie or Can't Judge (the second option should be rare, as the prioritization in picking wing judges is 1. Wing 2. Newbie 3. Can't Judge 3.5 Chair and 4. Suspended)
-            if feedback_values[str(j)] == "positive":
-                if prev_skill == "Newbie":
-                    User.query.filter_by(id=str(j)).update(
-                        {User.judge_skill: "Wing"}, synchronize_session=False
-                    )
-                elif prev_skill == "Cant judge":
-                    User.query.filter_by(id=str(j)).update(
-                        {User.judge_skill: "Newbie"}, synchronize_session=False
-                    )
-            # user is downgraded in status if the previous status was Newbie or Wing (this serves as a feedback mechanism to existing Wings too)
-            elif feedback_values[str(j)] == "negative":
-                if prev_skill == "Newbie":
-                    User.query.filter_by(id=str(j)).update(
-                        {User.judge_skill: "Suspended"}, synchronize_session=False
-                    )
-                elif prev_skill == "Wing":
-                    User.query.filter_by(id=str(j)).update(
-                        {User.judge_skill: "Newbie"}, synchronize_session=False
-                    )
-
         room_style = infer_room_style(debate.style, speaker_slots)
 
-        if room_style == "OPD":
+        if len(judge_ids) > 1 and room_style == "OPD":
+            feedback_values = session.get("feedback", {})
+            print(judge_ids)
+            print("see above")
+
+            for j in judge_ids:
+            # does not need to consider neutral feedback, as that never changes the status
+            # feedback_values might also contain a None value for the chair, which is also ignored
+                judge_user = User.query.filter_by(id=str(j)).first()
+                prev_skill = judge_user.judge_skill
+                # user is upgraded in status if the previous status was Newbie or Can't Judge (the second option should be rare, as the prioritization in picking wing judges is 1. Wing 2. Newbie 3. Can't Judge 3.5 Chair and 4. Suspended)
+                if feedback_values[str(j)] == "positive":
+                    if prev_skill == "Newbie":
+                        User.query.filter_by(id=str(j)).update(
+                            {User.judge_skill: "Wing"}, synchronize_session=False
+                        )
+                    #first timers are rarely selected as judges but should still be promoted (no demotion for first timers due to their inexperience and the general improbability of them judging in the first place)
+                    elif prev_skill == "Cant judge":
+                        User.query.filter_by(id=str(j)).update(
+                            {User.judge_skill: "Newbie"}, synchronize_session=False
+                        )
+                # user is downgraded in status if the previous status was Newbie or Wing (this serves as a feedback mechanism to existing Wings too)
+                elif feedback_values[str(j)] == "negative":
+                    if prev_skill == "Newbie":
+                        User.query.filter_by(id=str(j)).update(
+                            {User.judge_skill: "Suspended"}, synchronize_session=False
+                        )
+                    elif prev_skill == "Wing":
+                        User.query.filter_by(id=str(j)).update(
+                            {User.judge_skill: "Newbie"}, synchronize_session=False
+                        )
+
+
             for sp in speaker_slots:
                 avg = (
                     db.session.query(db.func.avg(Score.value))

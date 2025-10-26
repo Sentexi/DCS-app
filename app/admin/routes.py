@@ -230,11 +230,9 @@ def edit_debate(debate_id):
     debate = Debate.query.get_or_404(debate_id)
     if request.method == "POST":
         title = request.form["title"]
-        style = request.form["style"]
         assignment_mode = request.form.get("assignment_mode", debate.assignment_mode)
-        if title and style in ["OPD", "BP", "Dynamic"]:
+        if title:
             debate.title = title
-            debate.style = style
             debate.assignment_mode = assignment_mode
             db.session.commit()
             flash("Debate updated.", "success")
@@ -467,6 +465,10 @@ def dynamic_plan(debate_id):
 
     scenarios = []
     room_types = {"O": ("OPD", 7, 12), "B": ("BP", 9, 11)}
+    
+    #13 can not be split into two rooms, so it will be a full OPD room with a bonus judge
+    if len(users) == 13:
+        room_types = {"O": ("OPD", 7, 13), "B": ("BP", 9, 11)}
 
     max_rooms = min(5, total // 7) if total else 1
 

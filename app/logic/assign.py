@@ -784,6 +784,9 @@ def assign_dynamic(debate, users, scenario=None):
         return fallback_heuristic(debate, users)
 
     room_types = {"O": ("OPD", 7, 12), "B": ("BP", 9, 11)}
+    #special case of 13 participants, which is a larger than usual OPD room
+    if len(users) == 13:
+        room_types = {"O": ("OPD", 7, 13), "B": ("BP", 9, 11)}
     letters = scenario.split("-")
     #this will change the debate style if a scenario with only OPD or only BP rooms is selected
     debate.style = infer_debate_style(letters) 
