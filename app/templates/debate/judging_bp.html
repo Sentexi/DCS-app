@@ -17,8 +17,8 @@
   <p id="rank-warning" class="text-danger d-none">Each rank must be used once.</p>
   <button id="save-btn" type="submit" class="btn btn-primary">Save</button>
 </form>
-<form method="post" action="{{ url_for('debate.finalize', debate_id=debate.id) }}" onsubmit="return confirm('Finalize this debate?');">
-  <button type="submit" class="btn btn-danger mt-3">Finalize Debate</button>
+<form method="post" action="{{ url_for('debate.finalize', debate_id=debate.id, room_id=room_id) }}" onsubmit="return confirm('Finalize debate for this room?');">
+  <button type="submit" class="btn btn-danger mt-3">Finalize Room</button>
 </form>
 {% endblock %}
 {% block extra_js %}

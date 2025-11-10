@@ -3,6 +3,9 @@ from email.message import EmailMessage
 from itsdangerous import URLSafeTimedSerializer
 from flask import current_app
 import datetime
+from sqlalchemy import func
+from .extensions import db
+from .models import Vote, User, Topic
 
 def send_email(to, subject, body):
     msg = EmailMessage()
@@ -44,11 +47,6 @@ def confirm_token(token, salt, expiration=3600):
     return email
 
 
-from sqlalchemy import func
-from .extensions import db
-from .models import Vote, Topic
-
-
 def compute_winning_topic(debate):
     """Return the winning Topic for a debate or None."""
     if not debate or debate.voting_open or debate.second_voting_open:
@@ -71,8 +69,8 @@ def compute_winning_topic(debate):
         return None
     max_votes = max(c[1] for c in counts)
     winners = [tid for tid, c in counts if c == max_votes]
+    #debate title updates only after the winning topic is decided, no update after a draw
     if len(winners) == 1:
-        #this is a bit of an experiment
         current_date = datetime.datetime.now().strftime("%d.%m.%Y")
         debate.title = current_date + ": " + Topic.query.get(winners[0]).text
         db.session.commit()
@@ -82,13 +80,9 @@ def compute_winning_topic(debate):
 
 def reset_prefer_free():
     """Reset the prefer_judging flag for all users."""
-    from .models import User
-
     User.query.update({User.prefer_free: False}, synchronize_session=False)
 
 
 def reset_prefer_judging():
     """Reset the prefer_judging flag for all users."""
-    from .models import User
-
     User.query.update({User.prefer_judging: False}, synchronize_session=False)

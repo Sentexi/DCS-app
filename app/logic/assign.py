@@ -187,6 +187,7 @@ def _allocate_by_mode(
             rooms[idx].extend(pool[:need])
             pool = pool[need:]
         rooms = _balance_preferred(rooms)
+
         return rooms, unsafe, ""
 
     # determine skill metric
@@ -257,18 +258,6 @@ def _allocate_by_mode(
         pool = pool[cnt:]
     rooms = _balance_preferred(rooms)
     return rooms, unsafe, ""
-
-
-def assign_speakers(debate, users, max_rooms=2, scenario=None):
-    """
-    Dispatch to OPD or BP, splitting into at most max_rooms rooms,
-    and always using the fewest rooms needed.
-    """
-
-    users = list(users)
-    random.shuffle(users)
-
-    return assign_dynamic(debate, users, scenario=scenario)
 
 
 #checks if there is an eligible trainee and activates training_mode if that is the case (impacts selection of the first wing judge, who then should be of chair status), otherwise chair selection as usually: preferred first, chair status second, wing status third, neither suspended nor first timer fourth, not suspended last
@@ -778,6 +767,9 @@ def infer_debate_style(letters):
         
 def assign_dynamic(debate, users, scenario=None):
     """Assign speakers using a selected scenario."""
+
+    users = list(users)
+    random.shuffle(users)
     
     # Fallback to old heuristic if no scenario is provided
     if not scenario:
@@ -806,6 +798,10 @@ def assign_dynamic(debate, users, scenario=None):
     if msg:
         return False, msg
 
+    #store the number of rooms in the debate, relevant for finalization later
+    debate.rooms = len(rooms)
+    print("DEBUG")
+    print(debate.rooms)
     messages = []
     success = True
     for i, (room_users, spec) in enumerate(zip(rooms, settings), start=1):

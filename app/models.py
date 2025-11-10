@@ -88,8 +88,6 @@ class User(UserMixin, db.Model):
     elo_logs = db.relationship("EloLog", backref="user", lazy="dynamic")
 
     def get_slot_for_debate(self, debate_id):
-        from app.models import SpeakerSlot
-
         return SpeakerSlot.query.filter_by(debate_id=debate_id, user_id=self.id).first()
 
     def recent_opd_results(self, n=5):
@@ -136,6 +134,8 @@ class User(UserMixin, db.Model):
 class Debate(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(140), nullable=False)
+    rooms = db.Column(db.Integer, default=1)
+    finalized_rooms = db.Column(db.Integer, default=0)
     style = db.Column(
         db.Enum("OPD", "BP", "Dynamic", name="debate_style"), nullable=False
     )

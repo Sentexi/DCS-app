@@ -72,8 +72,8 @@ def dashboard():
             if slot.role == "Judge-Chair":
                 is_judge_chair = True
 
-        winning_topic = compute_winning_topic(current_debate)
-        #TODO: current_debate.title = winning_topic
+            winning_topic = compute_winning_topic(current_debate)
+
     # Categorize debates for UI tabs or display
     active_debates = [
         d
