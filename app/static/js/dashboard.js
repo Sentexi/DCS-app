@@ -283,6 +283,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  const preferFreeSpeech = document.getElementById('preferFree');
+  if (preferFreeSpeech) {
+    preferFreeSpeech.addEventListener('change', () => {
+      fetch('/profile/prefer_free', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prefer_free: preferFreeSpeech.checked })
+      });
+    });
+  }
+
   const preferCheck = document.getElementById('preferJudging');
   if (preferCheck) {
     preferCheck.addEventListener('change', () => {

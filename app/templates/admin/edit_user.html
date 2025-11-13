@@ -14,7 +14,7 @@
     <div class="mb-3">
         <label class="form-label">Judge Skill</label>
         <select name="judge_skill" class="form-select">
-            {% for skill in ['Cant judge','Wing','Chair'] %}
+            {% for skill in ['Suspended', 'Cant judge','Newbie', 'Wing','Trainee', 'Chair'] %}
             <option value="{{ skill }}" {% if user.judge_skill==skill %}selected{% endif %}>{{ skill }}</option>
             {% endfor %}
         </select>

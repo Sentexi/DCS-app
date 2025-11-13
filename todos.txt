@@ -1,0 +1,3 @@
+- can one judge finalize a debate when the other room is still open?
+- sorting order of debates in admin dashboard
+- scenario without wing judges still expects feedback

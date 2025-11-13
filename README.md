@@ -9,6 +9,10 @@
     - `pip install -r requirements.txt`
 4. Set up the database:
     - `flask db upgrade`
+4.1 If the database has been modified (either locally or in a branch from GitHub that is not consistent with the local state of the database):
+    - `flask db stamp head`
+    - `flask db migrate -m "some descriptive message here"`
+    - `flask db upgrade`
 5. Run the app:
     - `python run.py`
 

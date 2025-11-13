@@ -23,10 +23,45 @@
         <td class="avg">0</td>
       </tr>
       {% endfor %}
+{% with first_judge=judges.0 %}
+  {% for j in judges %}
+    {% if j.id != first_judge.id %}
+      <tr>
+        <td>Evaluation of {{ j.user.first_name }} {{ j.user.last_name }}</td>
+
+        {# iterate over all judge columns; put radios only in first judge's column #}
+        {% for col in judges %}
+          {% if col.id == first_judge.id %}
+            <td>
+	    <label>
+	    <input type="radio" name="feedback_{{ j.user_id }}" value="positive"
+	    {% if feedback.get(j.user.id) == 'positive' %}checked{% endif %} required> Positive
+	    </label>
+	    <label>
+	    <input type="radio" name="feedback_{{ j.user_id }}" value="neutral"
+	    {% if feedback.get(j.user.id) == 'neutral' %}checked{% endif %}> Neutral
+	    </label>
+	    <label>
+	    <input type="radio" name="feedback_{{ j.user_id }}" value="negative"
+	    {% if feedback.get(j.user.id) == 'negative' %}checked{% endif %}> Negative
+	    </label>
+	    </td>
+          {% else %}
+            <td></td>
+          {% endif %}
+        {% endfor %}
+
+        <td></td> {# Average column (empty) #}
+      </tr>
+    {% endif %}
+  {% endfor %}
+{% endwith %}
     </tbody>
   </table>
   <p><strong>Government:</strong> <span id="gov-total">0</span></p>
   <p><strong>Opposition:</strong> <span id="opp-total">0</span></p>
+  <p>Note on wing judge evaluation: Wing judges never see this evaluation, the purpose is updating the experience level of wing judges according to their performance. Neutral never changes their status and should be the default selection, positive can promote them up to wing status. Multiple negative evaluations reduce their probability of being selected as judge.</p>
+  <p>It is normal that the selection is invisible after saving, the system has still received the information.</p>
   <button type="submit" class="btn btn-primary">Save</button>
 </form>
 <form method="post" action="{{ url_for('debate.finalize', debate_id=debate.id) }}" onsubmit="return confirm('Finalize this debate?');">
