@@ -4,7 +4,7 @@ from sqlalchemy import distinct
 import itertools
 from app.models import Debate, Topic, Vote, User
 from app.extensions import db
-from app.logic.assign import assign_speakers, _compute_room_counts
+from app.logic.assign import assign_dynamic, _compute_room_counts
 from app.utils import compute_winning_topic, reset_prefer_judging, reset_prefer_free
 from datetime import datetime, timedelta
 from app import socketio
@@ -34,6 +34,8 @@ def admin_required(f):
 @admin_required
 def admin_dashboard():
     debates = Debate.query.all()
+    #reverse debates for better admin experience
+    debates = list(debates)[::-1]
     # Build voter count per debate
     voter_counts = {}
     for debate in debates:
@@ -61,6 +63,7 @@ def admin_dashboard():
 def create_debate():
     if request.method == "POST":
         title = request.form["title"]
+        finalized_rooms = 0
         assignment_mode = request.form.get("assignment_mode", "Random")
         if not title:
             flash("Please fill all fields correctly.", "danger")
@@ -416,7 +419,7 @@ def run_assign(debate_id):
     if mode:
         debate.assignment_mode = mode
         db.session.commit()
-    ok, msg = assign_speakers(debate, users, scenario=scenario)
+    ok, msg = assign_dynamic(debate, users, scenario=scenario)
     flash(msg, "success" if ok else "danger")
     if ok:
         socketio.emit("assignments_ready", {"debate_id": debate_id})
