@@ -351,10 +351,11 @@ def select_wings(preferred, pool, style):
                 wings.append(preferred.pop(0))
                 wing_added = True
             else:
-                candidate = qualified.pop(0)
-                if candidate not in wings:
-                    wings.append(candidate)
-                    wing_added = True
+                if len(qualified) > 0:
+                    candidate = qualified.pop(0)
+                    if candidate not in wings:
+                        wings.append(candidate)
+                        wing_added = True
                 
                 if len(qualified) == 0 and not wing_added and len(fallback) > 0:
                     candidate = fallback.pop(0)
