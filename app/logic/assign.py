@@ -338,23 +338,40 @@ def select_wings(preferred, pool, style):
 
     if required_wings <= 0:
         return wings
+    
     else:
+        qualified = [u for u in pool if not is_suspended(u) and not is_first(u) and not is_chair(u)]
+        fallback = [u for u in pool if not is_suspended(u) and not is_first(u) and not is_chair(u)]
+
+        #not an efficient implementation but should be robust, through pop() it must terminate at some point and it will try very hard to not choose complete newcomers, chairs, or suspended users
         while len(wings) < required_wings:
+            wing_added = False
             # first timers or chairs who set the judging preference can get selected here - volunteers are welcome! maybe some more distinction for chairs would be good but this probably doesn't have too much impact
             if preferred:
                 wings.append(preferred.pop(0))
+                wing_added = True
             else:
-                candidate = next((u for u in pool if not is_suspended(u) and not is_first(u) and not is_chair(u)), None)
-                if candidate and candidate not in wings:
+                candidate = qualified.pop(0)
+                if candidate not in wings:
                     wings.append(candidate)
-                else:
-                    candidate = next((u for u in pool if not is_suspended(u) and not is_chair(u)), None)
-                    if candidate and candidate not in wings:
+                    wing_added = True
+                
+                if len(qualified) == 0 and not wing_added and len(fallback) > 0:
+                    candidate = fallback.pop(0)
+                    if candidate not in wings:
                         wings.append(candidate)
-                    else:
-                        candidate = next((u for u in pool), None)
+                        wing_added = True
+
+                #absolute fallback solution, complete newcomers can get chosen here
+                elif not wing_added:
+                    if len(qualified) == len(fallback) == 0:
+                        candidate = next((u for u in pool if not is_suspended(u) and not is_chair(u)), None)
                         if candidate and candidate not in wings:
-                            wings.append(wing_user)
+                            wings.append(candidate)
+                        else:
+                            candidate = next((u for u in pool), None)
+                            if candidate and candidate not in wings:
+                                wings.append(wing_user)
     return wings
 
 
