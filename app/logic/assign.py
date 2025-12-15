@@ -344,13 +344,17 @@ def select_wings(preferred, pool, style):
             if preferred:
                 wings.append(preferred.pop(0))
             else:
-                wing_user = next((u for u in pool if not is_suspended(u) and not is_first(u) and not is_chair(u)), None)
-                if not wing_user:
-                    wing_user = next((u for u in pool if not is_suspended(u) and not is_chair(u)), None)
-                if not wing_user:
-                    wing_user = next((u for u in pool), None)
-                if wing_user:
-                    wings.append(wing_user)
+                candidate = next((u for u in pool if not is_suspended(u) and not is_first(u) and not is_chair(u)), None)
+                if candidate and candidate not in wings:
+                    wings.append(candidate)
+                else:
+                    candidate = next((u for u in pool if not is_suspended(u) and not is_chair(u)), None)
+                    if candidate and candidate not in wings:
+                        wings.append(candidate)
+                    else:
+                        candidate = next((u for u in pool), None)
+                        if candidate and candidate not in wings:
+                            wings.append(wing_user)
     return wings
 
 
