@@ -323,7 +323,6 @@ def select_first_wing(preferred, pref_free, others, training_mode):
         # this should be quite unlikely to happen but will select either first timers or chairs
         if not wing_user:
             wing_user = next((u for u in others if not is_suspended(u)), None)
-
     return wing_user
 
 
@@ -341,7 +340,7 @@ def select_wings(preferred, pool, style):
     
     else:
         qualified = [u for u in pool if not is_suspended(u) and not is_first(u) and not is_chair(u)]
-        fallback = [u for u in pool if not is_suspended(u) and not is_first(u) and not is_chair(u)]
+        fallback = [u for u in pool if not is_suspended(u) and not is_chair(u)]
 
         #not an efficient implementation but should be robust, through pop() it must terminate at some point and it will try very hard to not choose complete newcomers, chairs, or suspended users
         while len(wings) < required_wings:
@@ -363,16 +362,12 @@ def select_wings(preferred, pool, style):
                         wings.append(candidate)
                         wing_added = True
 
-                #absolute fallback solution, complete newcomers can get chosen here
+                #absolute fallback solution, chairs and suspended users can get chosen here
                 elif not wing_added:
                     if len(qualified) == len(fallback) == 0:
-                        candidate = next((u for u in pool if not is_suspended(u) and not is_chair(u)), None)
+                        candidate = next((u for u in pool), None)
                         if candidate and candidate not in wings:
-                            wings.append(candidate)
-                        else:
-                            candidate = next((u for u in pool), None)
-                            if candidate and candidate not in wings:
-                                wings.append(wing_user)
+                            wings.append(wing_user)
     return wings
 
 
