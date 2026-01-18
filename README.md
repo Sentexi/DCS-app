@@ -7,13 +7,13 @@
       `source venv/bin/activate` (macOS/Linux)
 3. Install dependencies:
     - `pip install -r requirements.txt`
-4. Set up the database:
+4. Set up the database if there were no modifications:
     - `flask db upgrade`
-4.1 If the database has been modified (either locally or in a branch from GitHub that is not consistent with the local state of the database):
+5. If the database has been modified (either locally or in a branch from GitHub that is not consistent with the local state of the database), if not this step can be ignored:
     - `flask db stamp head`
     - `flask db migrate -m "some descriptive message here"`
     - `flask db upgrade`
-5. Run the app:
+6. Run the app:
     - `python run.py`
 
 ## Configuration
