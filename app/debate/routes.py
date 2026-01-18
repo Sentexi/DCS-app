@@ -240,9 +240,11 @@ def finalize(debate_id, room_id):
     judges, speakers = sort_participants(slots, room_id)
     processed_users = set()
     
-    #delete()?
-    OpdResult.query.filter_by(debate_id=debate_id).delete()
-    EloLog.query.filter_by(debate_id=debate_id).delete()
+    #why is there even a delete in here in the first place???
+    #TODO: remove as soon as there is a solid Room model in place
+    if debate.finalized_rooms == 0:
+        OpdResult.query.filter_by(debate_id=debate_id).delete()
+        EloLog.query.filter_by(debate_id=debate_id).delete()
 
     speaker_ids = [sp.user_id for sp in speakers]
     judge_ids = [j.user_id for j in judges]
